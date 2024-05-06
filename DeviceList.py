@@ -11,6 +11,9 @@ import os
 
 #global var
 history_table = ""
+item_tag = ["이름", "총 갯수", "사용중", "태그", "링크", "이미지주소", "카테고리"]
+history_tag = ["아이템", "사용자", "갯수", "사용 날짜"]
+filename_tag = ["sensor.json", "cable.json"]
 
 def show_error_message(message):
     """Display an error message box with a custom message."""
@@ -29,6 +32,49 @@ def create_table(tab, columns):
     tree.pack(side="left", fill="both", expand=True)
 
     return tree
+
+def read_file1(filename, tree=None, tag=None):
+    for name_tag in filename:
+        try:
+            if os.path.getsize(name_tag) > 0:
+                with open(name_tag, "r", encoding="utf-8") as file:
+                    loaded_data = json.load(file)
+            else:
+                loaded_data = []
+        except FileNotFoundError:
+            loaded_data = []
+        except json.JSONDecodeError as e:
+            print(f"Error decoding JSON in file '{name_tag}': {e}")
+
+        if tree and tag:
+            for index, item in enumerate(loaded_data):
+                if all (name in item for name in tag):
+                    values = [item[name] for name in tag] 
+                    values.insert(3, int(item["총 갯수"]) - int(item["사용중"]))
+                    tree.insert('', 'end', values=values)
+                else:
+                    print(f"Invalid data format in file '{index}': Missing tag.")
+        else:
+            print()
+            #return loaded_data
+    
+def write_file(filename, data, tag):
+    try:
+        if os.path.getsize(filename) > 0:
+            with open(filename, "r", encoding="utf-8") as file:
+                loaded_data = json.load(file)
+        else:
+            loaded_data = []
+    except FileNotFoundError:
+        loaded_data = []
+
+    loaded_data.append(dict(zip(tag, data)))
+
+    try:
+        with open(filename, "w", encoding="utf-8") as file:
+            json.dump(loaded_data, file, ensure_ascii=False, indent=len(tag))
+    except (IOError, json.JSONDecodeError) as e:
+        print(f"Error writing to JSON file '{filename}': {e}")
 
 def read_file(filename, tree, item_name=None):
     for index in filename:
@@ -68,6 +114,23 @@ def read_file(filename, tree, item_name=None):
 
         except FileNotFoundError:
             print(f"File '{index}' not found.")
+
+def tab_index():
+    global filename_tag, tree_tag
+
+    current_tab_index = tab_control.index(tab_control.select())
+    current_tab_text = tab_control.tab(current_tab_index, "text")
+    filename = []
+
+    if current_tab_index == 0:
+        filename = filename_tag[:]
+    else:
+        filename.append(filename_tag[current_tab_index - 1])
+
+    info = [filename, tree_tag[current_tab_index], current_tab_text]
+
+    return info
+    
 
 def load_data():
     current_tab_index = tab_control.index(tab_control.select())
@@ -180,6 +243,13 @@ def change_form():
 
         filename_buff = ["sensor.json", "cable.json"]
 
+        name = name_entry.get()
+        quantity = quantity_entry.get()
+        tag = tag_entry.get()
+        link = link_entry.get()
+        imagePath = imagePath_entry.get()
+        item = item_type.get()
+
         if history_index == "센서":
             filename = filename_buff[0]
         elif history_index == "케이블":
@@ -192,14 +262,90 @@ def change_form():
                 with open(filename, "r", encoding="utf-8") as file:
                     data = json.load(file)
             else:
-                _data = []
+                data = []
         except FileNotFoundError:
             data = []
+
+        for i in range(len(data)):
+            if data[i]['이름'] == select_data[0]:
+                if data[i]['카테고리'] != item:
+                    new_data = [entry for entry in data if not (entry['이름'] == select_data[0])]
+
+                    with open(filename, "w", encoding="utf-8") as file:
+                        json.dump(new_data, file, ensure_ascii=False, indent=6)
+
+                    if item == "센서":
+                        filename = filename_buff[0]
+                    elif item == "케이블":
+                        filename = filename_buff[1]
+                    else:
+                        pass
+                    
+                    try:
+                        if os.path.getsize(filename) > 0:
+                            with open(filename, "r", encoding="utf-8") as file:
+                                data = json.load(file)
+                        else:
+                            data = []
+                    except FileNotFoundError:
+                        data = []
+
+                    data.append({
+                        "이름": name,
+                        "총 갯수": quantity,
+                        "사용중": 0,
+                        "태그": tag,
+                        "링크": link,
+                        "이미지주소": imagePath,
+                        "카테고리": item
+                    })
+                else:
+                    data[i]['이름'] = name
+                    data[i]['총 갯수'] = quantity
+                    data[i]['사용중'] = 0
+                    data[i]['태그'] = tag
+                    data[i]['링크'] = link
+                    data[i]['이미지주소'] = imagePath
+                    data[i]['카테고리'] = item
+
+                with open(filename, "w", encoding="utf-8") as file:
+                        json.dump(data, file, ensure_ascii=False, indent=6)
+
+    def del_data():
+        global history_index
+
+        filename_buff = ["sensor.json", "cable.json"]
+
+        if history_index == "센서":
+            filename = filename_buff[0]
+        elif history_index == "케이블":
+            filename = filename_buff[1]
+        else:
+            pass
+
+        try:
+            if os.path.getsize(filename) > 0:
+                with open(filename, "r", encoding="utf-8") as file:
+                    data = json.load(file)
+            else:
+                data = []
+        except FileNotFoundError:
+            data = []
+
+        for i in range(len(data)):
+            if data[i]['이름'] == select_data[0]:
+
+                new_data = [entry for entry in data if not (entry['이름'] == select_data[0])]
+
+                with open(filename, "w", encoding="utf-8") as file:
+                    json.dump(new_data, file, ensure_ascii=False, indent=6)
+            else:
+                pass
 
     change_button = ttk.Button(buttom_frame, width=5, text="변경", command=change_data)
     change_button.pack(side="left", padx=(0, 5))
 
-    delete_button = ttk.Button(buttom_frame, width=5, text="삭제")
+    delete_button = ttk.Button(buttom_frame, width=5, text="삭제", command=del_data)
     delete_button.pack(side="left")
 
 def save_history_date(tree):
@@ -298,40 +444,15 @@ def del_history_date():
         except json.JSONDecodeError as e:
             print(f"Error decoding JSON in file 'history.json': {e}")
 
-    
-
-        
-
-
-
 scrollbars = {}
 
 def switch_tab(event):
-    # 탭이 변경될 때 호출되는 함수
-    current_tab = event.widget.tab(event.widget.select(), "text")
-    history_table.delete(*history_table.get_children())
-
-    if current_tab == "전체":
-        # 센서 탭 선택 시 먼저 트리를 비워준 후 데이터를 로드
-        tree_total.delete(*tree_total.get_children())
-        load_data()
-        treeview = tree_total
-    elif current_tab == "센서":
-        # 센서 탭 선택 시 먼저 트리를 비워준 후 데이터를 로드
-        tree_sensor.delete(*tree_sensor.get_children())
-        load_data()
-        treeview = tree_sensor
-    elif current_tab == "케이블":
-        # 케이블 탭 선택 시 먼저 트리를 비워준 후 데이터를 로드
-        tree_cable.delete(*tree_cable.get_children())
-        load_data()
-        treeview = tree_cable
-    else:
-        # 모터 탭은 특별한 데이터가 없으므로 pass
-        pass
+    #infop[] = [filename, tree_var_name, tree_dp_name]
+    info = tab_index()
     
-    if treeview:
-        update_scrollbar(treeview, current_tab)
+    info[1].delete(*info[1].get_children())
+    read_file1(info[0], info[1], item_tag)
+    update_scrollbar(info[1], info[2])
 
 def update_scrollbar(treeview, tab_name):
     # Remove the previous scrollbar if it exists
@@ -775,6 +896,8 @@ columns_tag = ("이름", "총 갯수", "사용중", "보관중", "태그")
 tree_total = create_table(total_tab, columns_tag)
 tree_sensor = create_table(sensor_tab, columns_tag)
 tree_cable = create_table(cable_tab, columns_tag)
+
+tree_tag = [tree_total, tree_sensor, tree_cable]
 
 # 검색 엔트리와 검색 버튼 생성
 search_frame = ttk.Frame(left_frame)
