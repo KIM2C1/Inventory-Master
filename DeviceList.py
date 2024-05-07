@@ -12,8 +12,11 @@ import os
 #global var
 history_table = ""
 item_tag = ["이름", "총 갯수", "사용중", "태그", "링크", "이미지주소", "카테고리"]
-history_tag = ["아이템", "사용자", "갯수", "사용 날짜"]
+history_tag = ["아이템", "사용자", "갯수", "사용 날짜", "카테고리"]
+history_find_tag = ["아이템", "카테고리"]
 filename_tag = ["sensor.json", "cable.json"]
+filename_name = ["센서", "케이블"]
+is_select = False
 
 def show_error_message(message):
     """Display an error message box with a custom message."""
@@ -34,6 +37,8 @@ def create_table(tab, columns):
     return tree
 
 def read_file1(filename, tree=None, tag=None):
+    global history_taghistory_tag
+
     for name_tag in filename:
         try:
             if os.path.getsize(name_tag) > 0:
@@ -46,14 +51,20 @@ def read_file1(filename, tree=None, tag=None):
         except json.JSONDecodeError as e:
             print(f"Error decoding JSON in file '{name_tag}': {e}")
 
-        if tree and tag:
+        if tree == history_table and tag:
+            for index, item in enumerate(loaded_data):
+                if tag[0] == item["아이템"]:
+                    values = [item[name] for name in history_tag]
+                    tree.insert('', 'end', values=values)
+
+        elif tree and tag:
             for index, item in enumerate(loaded_data):
                 if all (name in item for name in tag):
                     values = [item[name] for name in tag] 
                     values.insert(3, int(item["총 갯수"]) - int(item["사용중"]))
                     tree.insert('', 'end', values=values)
                 else:
-                    print(f"Invalid data format in file '{index}': Missing tag.")
+                    print(f"Invalid data format in file '{item}': Missing tag.")
         else:
             print()
             #return loaded_data
@@ -127,9 +138,10 @@ def tab_index():
     else:
         filename.append(filename_tag[current_tab_index - 1])
 
-    info = [filename, tree_tag[current_tab_index], current_tab_text]
+    #info_tab[] = [filename, tree_var_name, tree_dp_name]
+    info_tab = [filename, tree_tag[current_tab_index], current_tab_text]
 
-    return info
+    return info_tab
     
 
 def load_data():
@@ -188,9 +200,7 @@ def save_data(filename, tree):
         json.dump(data, file, ensure_ascii=False, indent=size)
 
 def change_form():
-    global select_data
-
-    print(select_data)
+    info_select = tab_select()
 
     change_window = tk.Toplevel(root)
     change_window.title("데이터 변경")
@@ -203,45 +213,43 @@ def change_form():
     ttk.Label(form_frame, text="이름:").grid(row=0, column=0, sticky="w")
     name_entry = ttk.Entry(form_frame)
     name_entry.grid(row=0, column=1)
-    name_entry.insert(0, select_data[0])
+    name_entry.insert(0, info_select[0])
 
     # 갯수 입력
-    ttk.Label(form_frame, text="갯수:").grid(row=1, column=0, sticky="w")
+    ttk.Label(form_frame, text="총 갯수:").grid(row=1, column=0, sticky="w")
     quantity_entry = ttk.Entry(form_frame)
     quantity_entry.grid(row=1, column=1)
-    quantity_entry.insert(0, select_data[1])
+    quantity_entry.insert(0, info_select[1])
 
     # 링크 입력
     ttk.Label(form_frame, text="태그:").grid(row=2, column=0, sticky="w")
     link_entry = ttk.Entry(form_frame)
     link_entry.grid(row=2, column=1)
-    link_entry.insert(0, select_data[4])
+    link_entry.insert(0, info_select[4])
 
     # 태그 입력
     ttk.Label(form_frame, text="링크:").grid(row=3, column=0, sticky="w")
     tag_entry = ttk.Entry(form_frame)
     tag_entry.grid(row=3, column=1)
-    tag_entry.insert(0, select_data[5])
+    tag_entry.insert(0, info_select[5])
 
     # 이미지 주소 입력
     ttk.Label(form_frame, text="이미지 주소:").grid(row=4, column=0, sticky="w")
     imagePath_entry = ttk.Entry(form_frame)
     imagePath_entry.grid(row=4, column=1)
-    imagePath_entry.insert(0, select_data[6])
+    imagePath_entry.insert(0, info_select[6])
 
     # 아이템 타입 선택
     ttk.Label(form_frame, text="아이템 타입:").grid(row=5, column=0, sticky="w")
     item_type = ttk.Combobox(form_frame, values=["센서", "케이블"])
     item_type.grid(row=5, column=1)
-    item_type.set(select_data[7])
+    item_type.set(info_select[7])
 
     buttom_frame = ttk.Frame(form_frame)
     buttom_frame.grid(row=6, column=1, pady=10, padx=(0, 20))
 
     def change_data():
-        global history_index
-
-        filename_buff = ["sensor.json", "cable.json"]
+        info_select = tab_select() 
 
         name = name_entry.get()
         quantity = quantity_entry.get()
@@ -250,16 +258,9 @@ def change_form():
         imagePath = imagePath_entry.get()
         item = item_type.get()
 
-        if history_index == "센서":
-            filename = filename_buff[0]
-        elif history_index == "케이블":
-            filename = filename_buff[1]
-        else:
-            pass
-
         try:
-            if os.path.getsize(filename) > 0:
-                with open(filename, "r", encoding="utf-8") as file:
+            if os.path.getsize(info_select[8]) > 0:
+                with open(info_select[8], "r", encoding="utf-8") as file:
                     data = json.load(file)
             else:
                 data = []
@@ -267,23 +268,16 @@ def change_form():
             data = []
 
         for i in range(len(data)):
-            if data[i]['이름'] == select_data[0]:
+            if data[i]['이름'] == info_select[0]:
                 if data[i]['카테고리'] != item:
-                    new_data = [entry for entry in data if not (entry['이름'] == select_data[0])]
+                    new_data = [entry for entry in data if not (entry['이름'] == info_select[0])]
 
-                    with open(filename, "w", encoding="utf-8") as file:
+                    with open(info_select[8], "w", encoding="utf-8") as file:
                         json.dump(new_data, file, ensure_ascii=False, indent=6)
-
-                    if item == "센서":
-                        filename = filename_buff[0]
-                    elif item == "케이블":
-                        filename = filename_buff[1]
-                    else:
-                        pass
-                    
+   
                     try:
-                        if os.path.getsize(filename) > 0:
-                            with open(filename, "r", encoding="utf-8") as file:
+                        if os.path.getsize(info_select[8]) > 0:
+                            with open(info_select[8], "r", encoding="utf-8") as file:
                                 data = json.load(file)
                         else:
                             data = []
@@ -308,24 +302,15 @@ def change_form():
                     data[i]['이미지주소'] = imagePath
                     data[i]['카테고리'] = item
 
-                with open(filename, "w", encoding="utf-8") as file:
+                with open(info_select[8], "w", encoding="utf-8") as file:
                         json.dump(data, file, ensure_ascii=False, indent=6)
 
     def del_data():
-        global history_index
-
-        filename_buff = ["sensor.json", "cable.json"]
-
-        if history_index == "센서":
-            filename = filename_buff[0]
-        elif history_index == "케이블":
-            filename = filename_buff[1]
-        else:
-            pass
+        info_select = tab_select()
 
         try:
-            if os.path.getsize(filename) > 0:
-                with open(filename, "r", encoding="utf-8") as file:
+            if os.path.getsize(info_select[8]) > 0:
+                with open(info_select[8], "r", encoding="utf-8") as file:
                     data = json.load(file)
             else:
                 data = []
@@ -333,11 +318,11 @@ def change_form():
             data = []
 
         for i in range(len(data)):
-            if data[i]['이름'] == select_data[0]:
+            if data[i]['이름'] == info_select[0]:
 
-                new_data = [entry for entry in data if not (entry['이름'] == select_data[0])]
+                new_data = [entry for entry in data if not (entry['이름'] == info_select[0])]
 
-                with open(filename, "w", encoding="utf-8") as file:
+                with open(info_select[8], "w", encoding="utf-8") as file:
                     json.dump(new_data, file, ensure_ascii=False, indent=6)
             else:
                 pass
@@ -349,16 +334,7 @@ def change_form():
     delete_button.pack(side="left")
 
 def save_history_date(tree):
-    global history_index
-
-    filename_buff = ["sensor.json", "cable.json"]
-
-    if history_index == "센서":
-        filename = filename_buff[0]
-    elif history_index == "케이블":
-        filename = filename_buff[1]
-    else:
-        pass
+    info_select = tab_select()
 
     try:
         if os.path.getsize("history.json") > 0:
@@ -374,15 +350,16 @@ def save_history_date(tree):
             "아이템": tree[0],
             "사용자": tree[1],
             "갯수": tree[2],
-            "사용 날짜": tree[3]
+            "사용 날짜": tree[3],
+            "카테고리": tree[4]
         })
 
     with open("history.json", "w", encoding="utf-8") as file:
         json.dump(history_data, file, ensure_ascii=False, indent=4)
 
     try:
-        if os.path.getsize(filename) > 0:
-            with open(filename, "r", encoding="utf-8") as file:
+        if os.path.getsize(info_select[8]) > 0:
+            with open(info_select[8], "r", encoding="utf-8") as file:
                 tree_data = json.load(file) #트리 데이터중 현재 수정중인 데이터만 찾아야 함
         else:
             tree_data = []
@@ -395,64 +372,52 @@ def save_history_date(tree):
             tree_data[i]['사용중'] = int(tree_data[i]['사용중']) + int(tree[2])
             #print(int(tree_data[i]['갯수']))
 
-    with open(filename, "w", encoding="utf-8") as file:
+    with open(info_select[8], "w", encoding="utf-8") as file:
         json.dump(tree_data, file, ensure_ascii=False, indent=6)
 
-his_select_data = []
-
 def del_history_date():
-    global history_index
-    global his_select_data
-    global select_data
+    info_select = tab_select()
+    global info_history_select
 
-    filename_buff = ["sensor.json", "cable.json"]
-
-    if history_index == "센서":
-        filename = filename_buff[0]
-    elif history_index == "케이블":
-        filename = filename_buff[1]
-    else:
-        pass
-
-    print(f"인덱스: {his_select_data}")
+    print(info_history_select)
 
     try:
-        if os.path.getsize(filename) > 0:
-            with open(filename, "r", encoding="utf-8") as file:
+        if os.path.getsize(info_select[8]) > 0:
+            with open(info_select[8], "r", encoding="utf-8") as file:
                 tree_data = json.load(file) #트리 데이터중 현재 수정중인 데이터만 찾아야 함
         else:
             tree_data = []
     except FileNotFoundError:
         tree_data = []
 
-    print(his_select)
     for i in range(len(tree_data)):
-        if tree_data[i]['이름'] == select_data[0]:
-            tree_data[i]['사용중'] = int(tree_data[i]['사용중']) - int(his_select_data[1])
-            #print(int(tree_data[i]['갯수']))
-    with open(filename, "w", encoding="utf-8") as file:
+        if tree_data[i]['이름'] == info_select[0]:
+            tree_data[i]['사용중'] = int(tree_data[i]['사용중']) - int(info_history_select[1])
+
+    with open(info_select[8], "w", encoding="utf-8") as file:
         json.dump(tree_data, file, ensure_ascii=False, indent=6)
 
     with open("history.json", "r", encoding="utf-8") as json_file:
         try:
             data = json.load(json_file)
-            #print(data)
-            new_data = [entry for entry in data if not (entry['사용자'] == his_select_data[0] and entry['갯수'] == his_select_data[1] and entry['사용 날짜'] == his_select_data[2])]
+            new_data = [entry for entry in data if not (entry['사용자'] == info_history_select[0] and entry['갯수'] == info_history_select[1] and entry['사용 날짜'] == info_history_select[2])]
             
             with open("history.json", "w", encoding="utf-8") as file:
                 json.dump(new_data, file, ensure_ascii=False, indent=4)
         except json.JSONDecodeError as e:
             print(f"Error decoding JSON in file 'history.json': {e}")
 
+    info_history_select = ()
+
 scrollbars = {}
 
 def switch_tab(event):
-    #infop[] = [filename, tree_var_name, tree_dp_name]
-    info = tab_index()
+    #info_tab[] = [filename, tree_var_name, tree_dp_name]
+    info_tab = tab_index()
     
-    info[1].delete(*info[1].get_children())
-    read_file1(info[0], info[1], item_tag)
-    update_scrollbar(info[1], info[2])
+    info_tab[1].delete(*info_tab[1].get_children())
+    read_file1(info_tab[0], info_tab[1], item_tag)
+    update_scrollbar(info_tab[1], info_tab[2])
 
 def update_scrollbar(treeview, tab_name):
     # Remove the previous scrollbar if it exists
@@ -605,10 +570,11 @@ history_window = None
 def history_item():
     global history_window_open
     global history_window
-    global history_name
-    global test6
+    global is_select
 
-    if history_window_open or not test6:
+    info_select = tab_select()
+
+    if history_window_open or not is_select:
         show_error_message("이미 열려있습니다!")
         return
     
@@ -623,7 +589,7 @@ def history_item():
     form_frame.pack(padx=10, pady=10)
 
     ttk.Label(form_frame, text="아이템:").grid(row=0, column=0, sticky="w")
-    item_label = ttk.Label(form_frame, text=str(history_name))
+    item_label = ttk.Label(form_frame, text=str(info_select[0]))
     item_label.grid(row=0, column=1)
 
     ttk.Label(form_frame, text="사용자:").grid(row=1, column=0, sticky="w")
@@ -634,9 +600,13 @@ def history_item():
     quantity_entry = ttk.Entry(form_frame)
     quantity_entry.grid(row=2, column=1)
 
-    ttk.Label(form_frame, text="사용 날짜:").grid(row=3, column=0, sticky="w")
+    ttk.Label(form_frame, text="아이템 타입:").grid(row=3, column=0, sticky="w")
+    item_type = ttk.Label(form_frame, text=str(info_select[7]))
+    item_type.grid(row=3, column=1)
+
+    ttk.Label(form_frame, text="사용 날짜:").grid(row=4, column=0, sticky="w")
     date_entry = ttk.Entry(form_frame)
-    date_entry.grid(row=3, column=1)
+    date_entry.grid(row=4, column=1)
 
     current_time = time.localtime()
     formatted_time = time.strftime("%Y-%m-%d", current_time)
@@ -644,13 +614,14 @@ def history_item():
     date_entry.insert(0, str(formatted_time))
 
     def handle_history():
-        item = str(history_name)
+        item = str(info_select[0])
         name = name_entry.get()
         quantity = quantity_entry.get()
         date = date_entry.get()
+        category = str(info_select[7])
 
-        entries = [item_label, name_entry, quantity_entry, date_entry]
-        values = [item, name, quantity, date]
+        entries = [item_label, name_entry, quantity_entry, date_entry, item_type]
+        values = [item, name, quantity, date, category]
 
         empty_entries = []
         for entry, value in zip(entries, values):
@@ -668,7 +639,7 @@ def history_item():
             save_history_date(values)
 
     register_button = ttk.Button(form_frame, text="등록", command=handle_history)
-    register_button.grid(row=4, columnspan=2)
+    register_button.grid(row=5, columnspan=2)
 
     history_window.update()
     history_window.minsize(history_window.winfo_width(), history_window.winfo_height())
@@ -805,54 +776,49 @@ def load_and_display_image(url):
     except requests.RequestException as e:
         print(f"Error loading image: {e}")
 
-history_index = ""
-history_name = ""
-test6 = False
-select_data = []
+def tab_select(event=None):
+    global is_select
+    global filename_tag, filename_name
 
-def on_select(event):
-    global history_index
-    global history_name
-    global test6
-    global select_data
 
-    current_tab = tab_control.index(tab_control.select())
+    info_tab = tab_index()
 
-    if current_tab == 0:
-        tree = tree_total
-    elif current_tab == 1:
-        tree = tree_sensor
-    elif current_tab == 2:
-        tree = tree_cable
-    else:
-        pass
+    if info_tab[1].selection():
+        is_select = True
+        item = info_tab[1].selection()[0]
 
-    if tree.selection():
-        test6 = True
-        item = tree.selection()[0]
-        values = tree.item(item, "values")
-        select_data = tree.item(item, "values")
-        #values = [item["이름"], item["총 갯수"], item["사용중"], int(item["총 갯수"]) - int(item["사용중"]), item["태그"], item["링크"], item["이미지주소"], item["카테고리"]]
-        history_name = values[0]
-        image_path = values[6]
-        history_index = values[7]
+        #info_select[] = [name, total_cnt, use_cnt, invente_cnt, tag, link, image_path, category, filename]
+        info_select = info_tab[1].item(item, "values")
 
-        load_and_display_image(image_path)
-        #update_count_entry(values[1])
+        for name, tag in zip(filename_name, filename_tag):
+            if name == info_select[7]:
+                info_select += (tag,)
+                break
+
+        load_and_display_image(info_select[6])
 
         history_table.delete(*history_table.get_children())
-        read_file(test, history_table, values[0])
+        history_tag = [info_select[0], info_select[7]]
+        read_file1(["history.json"], history_table, history_tag)
+
     else:
-        test6 = False
-        pass
+        info_select = ()
+        is_select = False
+
+    return info_select
+
+info_history_select = ()
 
 def his_select(event):
-    global his_select_data
-
+    global info_history_select
     if history_table.selection():
         item = history_table.selection()[0]
-        his_select_data = history_table.item(item, "values")
-        print(his_select_data)
+        info_history_select = history_table.item(item, "values")
+    else:
+        info_history_select = ()
+
+
+
 
 # GUI 생성
 root = tk.Tk()
@@ -952,9 +918,9 @@ tree_sensor.bind("<Double-1>", open_link)
 tree_cable.bind("<Double-1>", open_link)
 
 # 선택 이벤트 처리
-tree_total.bind("<<TreeviewSelect>>", on_select)
-tree_sensor.bind("<<TreeviewSelect>>", on_select)
-tree_cable.bind("<<TreeviewSelect>>", on_select)
+tree_total.bind("<<TreeviewSelect>>", tab_select)
+tree_sensor.bind("<<TreeviewSelect>>", tab_select)
+tree_cable.bind("<<TreeviewSelect>>", tab_select)
 
 # 초기 데이터 로드
 load_data()

@@ -1,51 +1,38 @@
-def save_history_date(tree):
-    global history_index
+def tab_index():
+    global filename_tag, tree_tag
 
-    filename_buff = ["sensor.json", "cable.json"]
+    current_tab_index = tab_control.index(tab_control.select())
+    current_tab_text = tab_control.tab(current_tab_index, "text")
+    filename = []
 
-    if history_index == "센서":
-        filename = filename_buff[0]
-    elif history_index == "케이블":
-        filename = filename_buff[1]
+    if current_tab_index == 0:
+        filename = filename_tag[:]
     else:
-        pass
+        filename.append(filename_tag[current_tab_index - 1])
 
-    try:
-        if os.path.getsize("history.json") > 0:
-            with open("history.json", "r", encoding="utf-8") as file:
-                history_data = json.load(file)
-                #print(history_data)
-        else:
-            history_data = []
-    except FileNotFoundError:
-        history_data = []
+    #info[] = [filename, tree_var_name, tree_dp_name]
+    info = [filename, tree_tag[current_tab_index], current_tab_text]
 
-    history_data.append({
-            "아이템": tree[0],
-            "사용자": tree[1],
-            "갯수": tree[2],
-            "사용 날짜": tree[3]
-        })
+    return info
 
-    with open("history.json", "w", encoding="utf-8") as file:
-        json.dump(history_data, file, ensure_ascii=False, indent=4)
 
-    try:
-        if os.path.getsize(filename) > 0:
-            with open(filename, "r", encoding="utf-8") as file:
-                tree_data = json.load(file) #트리 데이터중 현재 수정중인 데이터만 찾아야 함
-        else:
-            tree_data = []
-    except FileNotFoundError:
-        tree_data = []
+#select_date[] = [name, total_cnt, use_cnt, invente_cnt, tag, link, image_path, category]
+select_data = info_tab[1].item(item, "values")
 
-    for i in range(len(tree_data)):
-        if tree_data[i]['이름'] == tree[0]:
-            
-            tree_data[i]['사용중'] = int(tree_data[i]['사용중']) + int(tree[2])
-            #print(int(tree_data[i]['갯수']))
+filename_tag = ["sensor.json", "cable.json"]
+filename_name = ["센서", "케이블"]
 
-    with open(filename, "w", encoding="utf-8") as file:
-        json.dump(tree_data, file, ensure_ascii=False, indent=6)
+#info_select[] = [name, total_cnt, use_cnt, invente_cnt, tag, link, image_path, category, filename]
+info_select = on_select()
+info_select[8]
 
-his_select_data = []
+#info_history_select = [User, cnt, date]
+info_history_select = his_select()
+
+history_table = ""
+item_tag = ["이름", "총 갯수", "사용중", "태그", "링크", "이미지주소", "카테고리"]
+history_tag = ["아이템", "사용자", "갯수", "사용 날짜", "카테고리"]
+history_find_tag = ["아이템", "카테고리"]
+filename_tag = ["sensor.json", "cable.json"]
+filename_name = ["센서", "케이블"]
+is_select = False
