@@ -113,11 +113,16 @@ def tab_index():
     return info_tab
 
 def change_form():
-    info_select = tab_select()
+    global filename_tag, filename_name
+
+    info_select = item_select()
 
     change_window = tk.Toplevel(root)
-    change_window.title("데이터 변경")
+    change_window.title("데이터 수정")
+    x_cordinate = int((root.winfo_screenwidth() / 2) - (root.winfo_width() / 2))
+    y_cordinate = int((root.winfo_screenheight() / 2) - (root.winfo_height() / 2))
     change_window.geometry("+{}+{}".format(x_cordinate, y_cordinate-20))
+    #center_window(change_window)
 
     form_frame = ttk.Frame(change_window)
     form_frame.pack(padx=10, pady=10)
@@ -162,8 +167,7 @@ def change_form():
     buttom_frame.grid(row=6, column=1, pady=10, padx=(0, 20))
 
     def change_data():
-        info_select = tab_select() 
-
+        #info_select = item_select() 
         name = name_entry.get()
         quantity = quantity_entry.get()
         tag = tag_entry.get()
@@ -171,33 +175,24 @@ def change_form():
         imagePath = imagePath_entry.get()
         item = item_type.get()
 
-        try:
-            if os.path.getsize(info_select[8]) > 0:
-                with open(info_select[8], "r", encoding="utf-8") as file:
-                    data = json.load(file)
-            else:
-                data = []
-        except FileNotFoundError:
-            data = []
+        original_data = read_file(["sensor.json"])
+        
+        for i in range(len(original_data)):
+            if original_data[i]['이름'] == info_select[0]:
+                if original_data[i]['카테고리'] != item:
+                    del_data = [entry for entry in original_data if not (entry['이름'] == info_select[0])]
 
-        for i in range(len(data)):
-            if data[i]['이름'] == info_select[0]:
-                if data[i]['카테고리'] != item:
-                    new_data = [entry for entry in data if not (entry['이름'] == info_select[0])]
+                    # write_file을 할때 보내야 하는 data의 형식이 () 여야 함.
+                    # 폼 중앙 정렬 오류 수정해야함 
 
-                    with open(info_select[8], "w", encoding="utf-8") as file:
-                        json.dump(new_data, file, ensure_ascii=False, indent=6)
-   
-                    try:
-                        if os.path.getsize(info_select[8]) > 0:
-                            with open(info_select[8], "r", encoding="utf-8") as file:
-                                data = json.load(file)
-                        else:
-                            data = []
-                    except FileNotFoundError:
-                        data = []
+                    write_file(info_select[8], del_data, item_tag)
 
-                    data.append({
+                    filename = filename_tag[filename_name.index(item)] if item in filename_name else None
+                    print(filename)
+
+                    new_data = read_file(filename)
+
+                    new_data.append({
                         "이름": name,
                         "총 갯수": quantity,
                         "사용중": 0,
@@ -207,19 +202,19 @@ def change_form():
                         "카테고리": item
                     })
                 else:
-                    data[i]['이름'] = name
-                    data[i]['총 갯수'] = quantity
-                    data[i]['사용중'] = 0
-                    data[i]['태그'] = tag
-                    data[i]['링크'] = link
-                    data[i]['이미지주소'] = imagePath
-                    data[i]['카테고리'] = item
+                    original_data[i]['이름'] = name
+                    original_data[i]['총 갯수'] = quantity
+                    original_data[i]['사용중'] = 0
+                    original_data[i]['태그'] = tag
+                    original_data[i]['링크'] = link
+                    original_data[i]['이미지주소'] = imagePath
+                    original_data[i]['카테고리'] = item
 
-                with open(info_select[8], "w", encoding="utf-8") as file:
-                        json.dump(data, file, ensure_ascii=False, indent=6)
+                write_file(info_select[8], original_data, item_tag)
+
 
     def del_data():
-        info_select = tab_select()
+        info_select = item_select()
 
         try:
             if os.path.getsize(info_select[8]) > 0:
@@ -240,14 +235,16 @@ def change_form():
             else:
                 pass
 
+    #변경 버튼
     change_button = ttk.Button(buttom_frame, width=5, text="변경", command=change_data)
     change_button.pack(side="left", padx=(0, 5))
 
+    #삭제 버튼
     delete_button = ttk.Button(buttom_frame, width=5, text="삭제", command=del_data)
     delete_button.pack(side="left")
 
 def save_history_date(tree):
-    info_select = tab_select()
+    info_select = item_select()
 
     try:
         if os.path.getsize("history.json") > 0:
@@ -289,7 +286,7 @@ def save_history_date(tree):
         json.dump(tree_data, file, ensure_ascii=False, indent=6)
 
 def del_history_date():
-    info_select = tab_select()
+    info_select = item_select()
     global info_history_select
 
     print(info_history_select)
@@ -481,7 +478,7 @@ def history_item():
     global history_window
     global is_select
 
-    info_select = tab_select()
+    info_select = item_select()
 
     if history_window_open or not is_select:
         show_error_message("이미 열려있습니다!")
@@ -665,7 +662,7 @@ def load_and_display_image(url):
     except requests.RequestException as e:
         print(f"Error loading image: {e}")
 
-def tab_select(event=None):
+def item_select(event=None):
     global is_select
     global filename_tag, filename_name
 
@@ -806,9 +803,9 @@ tree_sensor.bind("<Double-1>", open_link)
 tree_cable.bind("<Double-1>", open_link)
 
 # 선택 이벤트 처리
-tree_total.bind("<<TreeviewSelect>>", tab_select)
-tree_sensor.bind("<<TreeviewSelect>>", tab_select)
-tree_cable.bind("<<TreeviewSelect>>", tab_select)
+tree_total.bind("<<TreeviewSelect>>", item_select)
+tree_sensor.bind("<<TreeviewSelect>>", item_select)
+tree_cable.bind("<<TreeviewSelect>>", item_select)
 
 # 초기 데이터 로드
 switch_tab()
@@ -819,9 +816,7 @@ test.append("history.json")
 
 # Set a minsize for the window, and place it in the middle
 root.update()
-root.minsize(root.winfo_width(), root.winfo_height())
-x_cordinate = int((root.winfo_screenwidth() / 2) - (root.winfo_width() / 2))
-y_cordinate = int((root.winfo_screenheight() / 2) - (root.winfo_height() / 2))
-root.geometry("+{}+{}".format(x_cordinate, y_cordinate-20))
+root.minsize(root.winfo_width(), root.winfo_height()) #최소 크기 지정
+center_window(root)
 
 root.mainloop()
