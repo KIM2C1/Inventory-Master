@@ -441,8 +441,9 @@ def register_item():
 
             for index, name in enumerate(filename_name):
                 if item == name:
-                    tree_tag[index + 1].insert('', 'end', values=data)
-                    write_file(filename_tag[index], values, item_tag)
+                    tree_tag[index].insert('', 'end', values=data)
+
+                    write_file(filename_tag[index], data, item_tag)
                 else:
                     pass
 
