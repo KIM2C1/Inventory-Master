@@ -1,8 +1,27 @@
-root.minsize(root.winfo_width(), root.winfo_height())
-x_cordinate = int((root.winfo_screenwidth() / 2) - (root.winfo_width() / 2))
-y_cordinate = int((root.winfo_screenheight() / 2) - (root.winfo_height() / 2))
-root.geometry("+{}+{}".format(x_cordinate, y_cordinate-20))
+def write_file(filename, data, tag):
+    try:
+        if os.path.getsize(filename) > 0:
+            with open(filename, "r", encoding="utf-8") as file:
+                loaded_data = json.load(file)
+        else:
+            loaded_data = []
+    except FileNotFoundError:
+        loaded_data = []
 
-#info_select[] = [
-name, total_cnt, use_cnt, invente_cnt, tag, link, image_path, category, filename
-]
+    loaded_data.append(dict(zip(tag, data)))
+
+    try:
+        with open(filename, "w", encoding="utf-8") as file:
+            json.dump(loaded_data, file, ensure_ascii=False, indent=len(tag))
+    except (IOError, json.JSONDecodeError) as e:
+        print(f"Error writing to JSON file '{filename}': {e}")
+
+        # 폼 중앙 정렬 오류 수정해야함 
+
+def center_window(window):
+    window.update_idletasks()
+    width = window.winfo_width()
+    height = window.winfo_height()
+    x = (window.winfo_screenwidth() // 2) - (width // 2)
+    y = (window.winfo_screenheight() // 2) - (height // 2)
+    window.geometry('{}x{}+{}+{}'.format(width, height, x, y))

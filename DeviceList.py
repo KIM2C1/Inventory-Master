@@ -95,6 +95,13 @@ def write_file(filename, data, tag):
     except (IOError, json.JSONDecodeError) as e:
         print(f"Error writing to JSON file '{filename}': {e}")
 
+def dump_data(filename, data, tag):
+        try:
+            with open(filename, "w", encoding="utf-8") as file:
+                json.dump(data, file, ensure_ascii=False, indent=len(tag))
+        except (IOError, json.JSONDecodeError) as e:
+            print(f"Error writing to JSON file '{filename}': {e}")
+
 def tab_index():
     global filename_tag, tree_tag
 
@@ -114,51 +121,49 @@ def tab_index():
 
 def change_form():
     global filename_tag, filename_name
-
     info_select = item_select()
 
     change_window = tk.Toplevel(root)
     change_window.title("데이터 수정")
-    x_cordinate = int((root.winfo_screenwidth() / 2) - (root.winfo_width() / 2))
-    y_cordinate = int((root.winfo_screenheight() / 2) - (root.winfo_height() / 2))
-    change_window.geometry("+{}+{}".format(x_cordinate, y_cordinate-20))
-    #center_window(change_window)
+    change_window.geometry("340x325")
+    change_window.resizable(False, False)
+    center_window(change_window)
 
     form_frame = ttk.Frame(change_window)
     form_frame.pack(padx=10, pady=10)
 
     # 이름 입력
-    ttk.Label(form_frame, text="이름:").grid(row=0, column=0, sticky="w")
+    ttk.Label(form_frame, text="이름:").grid(row=0, column=0, sticky="w", pady=10)
     name_entry = ttk.Entry(form_frame)
-    name_entry.grid(row=0, column=1)
+    name_entry.grid(row=0, column=1, padx=10)
     name_entry.insert(0, info_select[0])
 
     # 갯수 입력
-    ttk.Label(form_frame, text="총 갯수:").grid(row=1, column=0, sticky="w")
+    ttk.Label(form_frame, text="총 갯수:").grid(row=1, column=0, sticky="w", pady=10)
     quantity_entry = ttk.Entry(form_frame)
     quantity_entry.grid(row=1, column=1)
     quantity_entry.insert(0, info_select[1])
 
     # 링크 입력
-    ttk.Label(form_frame, text="태그:").grid(row=2, column=0, sticky="w")
+    ttk.Label(form_frame, text="태그:").grid(row=2, column=0, sticky="w", pady=10)
     link_entry = ttk.Entry(form_frame)
     link_entry.grid(row=2, column=1)
     link_entry.insert(0, info_select[4])
 
     # 태그 입력
-    ttk.Label(form_frame, text="링크:").grid(row=3, column=0, sticky="w")
+    ttk.Label(form_frame, text="링크:").grid(row=3, column=0, sticky="w", pady=10)
     tag_entry = ttk.Entry(form_frame)
     tag_entry.grid(row=3, column=1)
     tag_entry.insert(0, info_select[5])
 
     # 이미지 주소 입력
-    ttk.Label(form_frame, text="이미지 주소:").grid(row=4, column=0, sticky="w")
+    ttk.Label(form_frame, text="이미지 주소:").grid(row=4, column=0, sticky="w", pady=10)
     imagePath_entry = ttk.Entry(form_frame)
     imagePath_entry.grid(row=4, column=1)
     imagePath_entry.insert(0, info_select[6])
 
     # 아이템 타입 선택
-    ttk.Label(form_frame, text="아이템 타입:").grid(row=5, column=0, sticky="w")
+    ttk.Label(form_frame, text="아이템 타입:").grid(row=5, column=0, sticky="w", pady=10)
     item_type = ttk.Combobox(form_frame, values=["센서", "케이블"])
     item_type.grid(row=5, column=1)
     item_type.set(info_select[7])
@@ -166,8 +171,9 @@ def change_form():
     buttom_frame = ttk.Frame(form_frame)
     buttom_frame.grid(row=6, column=1, pady=10, padx=(0, 20))
 
+    
+
     def change_data():
-        #info_select = item_select() 
         name = name_entry.get()
         quantity = quantity_entry.get()
         tag = tag_entry.get()
@@ -175,24 +181,21 @@ def change_form():
         imagePath = imagePath_entry.get()
         item = item_type.get()
 
-        original_data = read_file(["sensor.json"])
+        original_data = read_file([info_select[8]])
         
         for i in range(len(original_data)):
             if original_data[i]['이름'] == info_select[0]:
+                #카테고리가 변경된 경우
                 if original_data[i]['카테고리'] != item:
-                    del_data = [entry for entry in original_data if not (entry['이름'] == info_select[0])]
+                    remove_data = [entry for entry in original_data if not (entry['이름'] == info_select[0])]
+                    dump_data(info_select[8], remove_data, item_tag)
 
-                    # write_file을 할때 보내야 하는 data의 형식이 () 여야 함.
-                    # 폼 중앙 정렬 오류 수정해야함 
-
-                    write_file(info_select[8], del_data, item_tag)
-
+                    #변경된 카테고리로 부터 파일의 이름 추출
                     filename = filename_tag[filename_name.index(item)] if item in filename_name else None
-                    print(filename)
 
-                    new_data = read_file(filename)
+                    change_data = read_file([filename])
 
-                    new_data.append({
+                    change_data.append({
                         "이름": name,
                         "총 갯수": quantity,
                         "사용중": 0,
@@ -201,6 +204,9 @@ def change_form():
                         "이미지주소": imagePath,
                         "카테고리": item
                     })
+
+                    dump_data(filename, change_data, item_tag)
+
                 else:
                     original_data[i]['이름'] = name
                     original_data[i]['총 갯수'] = quantity
@@ -210,114 +216,56 @@ def change_form():
                     original_data[i]['이미지주소'] = imagePath
                     original_data[i]['카테고리'] = item
 
-                write_file(info_select[8], original_data, item_tag)
+                    dump_data(info_select[8], original_data, item_tag)
 
+    def delete_data():
+        original_data = read_file([info_select[8]])
 
-    def del_data():
-        info_select = item_select()
-
-        try:
-            if os.path.getsize(info_select[8]) > 0:
-                with open(info_select[8], "r", encoding="utf-8") as file:
-                    data = json.load(file)
-            else:
-                data = []
-        except FileNotFoundError:
-            data = []
-
-        for i in range(len(data)):
-            if data[i]['이름'] == info_select[0]:
-
-                new_data = [entry for entry in data if not (entry['이름'] == info_select[0])]
-
-                with open(info_select[8], "w", encoding="utf-8") as file:
-                    json.dump(new_data, file, ensure_ascii=False, indent=6)
-            else:
-                pass
+        for i in range(len(original_data)):
+            if original_data[i]['이름'] == info_select[0]:
+                new_data = [entry for entry in original_data if not (entry['이름'] == info_select[0])]
+                dump_data(info_select[8], new_data, item_tag)
 
     #변경 버튼
     change_button = ttk.Button(buttom_frame, width=5, text="변경", command=change_data)
     change_button.pack(side="left", padx=(0, 5))
 
     #삭제 버튼
-    delete_button = ttk.Button(buttom_frame, width=5, text="삭제", command=del_data)
+    delete_button = ttk.Button(buttom_frame, width=5, text="삭제", command=delete_data)
     delete_button.pack(side="left")
 
 def save_history_date(tree):
     info_select = item_select()
 
-    try:
-        if os.path.getsize("history.json") > 0:
-            with open("history.json", "r", encoding="utf-8") as file:
-                history_data = json.load(file)
-                #print(history_data)
-        else:
-            history_data = []
-    except FileNotFoundError:
-        history_data = []
+    write_file("history.json", tree, history_tag)
 
-    history_data.append({
-            "아이템": tree[0],
-            "사용자": tree[1],
-            "갯수": tree[2],
-            "사용 날짜": tree[3],
-            "카테고리": tree[4]
-        })
+    original_data = read_file([info_select[8]])
 
-    with open("history.json", "w", encoding="utf-8") as file:
-        json.dump(history_data, file, ensure_ascii=False, indent=4)
+    for index in range(len(original_data)):
+        if original_data[index]['이름'] == tree[0]:
+            original_data[index]['사용중'] = int(original_data[index]['사용중']) + int(tree[2])
 
-    try:
-        if os.path.getsize(info_select[8]) > 0:
-            with open(info_select[8], "r", encoding="utf-8") as file:
-                tree_data = json.load(file) #트리 데이터중 현재 수정중인 데이터만 찾아야 함
-        else:
-            tree_data = []
-    except FileNotFoundError:
-        tree_data = []
-
-    for i in range(len(tree_data)):
-        if tree_data[i]['이름'] == tree[0]:
-            
-            tree_data[i]['사용중'] = int(tree_data[i]['사용중']) + int(tree[2])
-            #print(int(tree_data[i]['갯수']))
-
-    with open(info_select[8], "w", encoding="utf-8") as file:
-        json.dump(tree_data, file, ensure_ascii=False, indent=6)
+    dump_data(info_select[8], original_data, item_tag)
 
 def del_history_date():
+    #등록 순번 == 산텍힌 인데스 번호를 데이터에 추가해서 같은지 확인 하는 거 추가해야함
+    global info_history_select, item_tag, history_tag
     info_select = item_select()
-    global info_history_select
 
-    print(info_history_select)
+    original_tab_data = read_file([info_select[8]])
 
-    try:
-        if os.path.getsize(info_select[8]) > 0:
-            with open(info_select[8], "r", encoding="utf-8") as file:
-                tree_data = json.load(file) #트리 데이터중 현재 수정중인 데이터만 찾아야 함
-        else:
-            tree_data = []
-    except FileNotFoundError:
-        tree_data = []
+    for index in range(len(original_tab_data)):
+        if original_tab_data[index]['이름'] == info_select[0]:
+            original_tab_data[index]['사용중'] = int(original_tab_data[index]['사용중']) - int(info_history_select[2])
 
-    for i in range(len(tree_data)):
-        if tree_data[i]['이름'] == info_select[0]:
-            tree_data[i]['사용중'] = int(tree_data[i]['사용중']) - int(info_history_select[1])
+    dump_data(info_select[8], original_tab_data, item_tag)
 
-    with open(info_select[8], "w", encoding="utf-8") as file:
-        json.dump(tree_data, file, ensure_ascii=False, indent=6)
+    original_his_data = read_file(["history.json"])
 
-    with open("history.json", "r", encoding="utf-8") as json_file:
-        try:
-            data = json.load(json_file)
-            new_data = [entry for entry in data if not (entry['사용자'] == info_history_select[0] and entry['갯수'] == info_history_select[1] and entry['사용 날짜'] == info_history_select[2])]
-            
-            with open("history.json", "w", encoding="utf-8") as file:
-                json.dump(new_data, file, ensure_ascii=False, indent=4)
-        except json.JSONDecodeError as e:
-            print(f"Error decoding JSON in file 'history.json': {e}")
+    new_data = [entry for entry in original_his_data if not (entry['사용자'] == info_history_select[1] and entry['갯수'] == info_history_select[2] and entry['사용 날짜'] == info_history_select[3])]
 
-    info_history_select = ()
+    dump_data("history.json", new_data, history_tag)
+
 
 scrollbars = {}
 
@@ -344,42 +292,43 @@ def update_scrollbar(treeview, tab_name):
         treeview.column(column, width=100)  # Adjust the width as needed
 
 def register_item():
-    # 아이템 등록 함수
     register_window = tk.Toplevel(root)
     register_window.title("아이템 등록")
-    register_window.geometry("+{}+{}".format(x_cordinate, y_cordinate-20))
+    register_window.geometry("360x335")
+    register_window.resizable(False, False)
+    center_window(register_window)
 
     # 폼 생성
     form_frame = ttk.Frame(register_window)
     form_frame.pack(padx=10, pady=10)
 
     # 이름 입력
-    ttk.Label(form_frame, text="이름:").grid(row=0, column=0, sticky="w")
+    ttk.Label(form_frame, text="이름:").grid(row=0, column=0, sticky="w", pady=10)
     name_entry = ttk.Entry(form_frame)
-    name_entry.grid(row=0, column=1)
+    name_entry.grid(row=0, column=1, padx=10)
 
     # 갯수 입력
-    ttk.Label(form_frame, text="갯수:").grid(row=1, column=0, sticky="w")
+    ttk.Label(form_frame, text="갯수:").grid(row=1, column=0, sticky="w", pady=10)
     quantity_entry = ttk.Entry(form_frame)
     quantity_entry.grid(row=1, column=1)
 
     # 링크 입력
-    ttk.Label(form_frame, text="태그:").grid(row=2, column=0, sticky="w")
+    ttk.Label(form_frame, text="태그:").grid(row=2, column=0, sticky="w", pady=10)
     link_entry = ttk.Entry(form_frame)
     link_entry.grid(row=2, column=1)
 
     # 태그 입력
-    ttk.Label(form_frame, text="링크:").grid(row=3, column=0, sticky="w")
+    ttk.Label(form_frame, text="링크:").grid(row=3, column=0, sticky="w", pady=10)
     tag_entry = ttk.Entry(form_frame)
     tag_entry.grid(row=3, column=1)
 
     # 이미지 주소 입력
-    ttk.Label(form_frame, text="이미지 주소:").grid(row=4, column=0, sticky="w")
+    ttk.Label(form_frame, text="이미지 주소:").grid(row=4, column=0, sticky="w", pady=10)
     imagePath_entry = ttk.Entry(form_frame)
     imagePath_entry.grid(row=4, column=1)
 
     # 아이템 타입 선택
-    ttk.Label(form_frame, text="아이템 타입:").grid(row=5, column=0, sticky="w")
+    ttk.Label(form_frame, text="아이템 타입:").grid(row=5, column=0, sticky="w", pady=10)
     item_type = ttk.Combobox(form_frame, values=["센서", "케이블"])
     item_type.grid(row=5, column=1)
 
@@ -452,14 +401,7 @@ def register_item():
 
     # 등록 버튼 생성
     register_button = ttk.Button(form_frame, text="등록", command=handle_register)
-    register_button.grid(row=6, columnspan=2)
-
-    # 창을 화면 중앙에 배치
-    register_window.update()
-    register_window.minsize(register_window.winfo_width(), register_window.winfo_height())
-    x_cordinate1 = int((register_window.winfo_screenwidth() / 2) - (register_window.winfo_width() / 2))
-    y_cordinate1 = int((register_window.winfo_screenheight() / 2) - (register_window.winfo_height() / 2))
-    register_window.geometry("+{}+{}".format(x_cordinate1, y_cordinate1))
+    register_button.grid(row=6, columnspan=2, padx=(40,0), pady=20)
 
 def center_window(window):
     window.update_idletasks()
@@ -489,7 +431,10 @@ def history_item():
     history_window = tk.Toplevel(root)
     history_window.title("히스토리 추가")
     history_window.protocol("WM_DELETE_WINDOW", on_history_window_close)  # 윈도우가 닫힐 때 호출될 함수 지정
-    history_window.geometry("+{}+{}".format(x_cordinate, y_cordinate-20))
+    
+    history_window.geometry("500x500")
+    center_window(history_window)
+    #history_window.geometry("+{}+{}".format(x_cordinate, y_cordinate-20))
 
     form_frame = ttk.Frame(history_window)
     form_frame.pack(padx=10, pady=10)
@@ -541,7 +486,7 @@ def history_item():
             return
         else:
             data = (name, quantity, date)
-            history_table.insert('', 'end', values=data)
+            #history_table.insert('', 'end', values=data)
             save_history_date(values)
 
     register_button = ttk.Button(form_frame, text="등록", command=handle_history)
