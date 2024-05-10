@@ -18,6 +18,10 @@ filename_tag = ["sensor.json", "cable.json"]
 filename_name = ["센서", "케이블"]
 is_select = False
 
+history_window = None 
+register_window = None
+change_window = None
+
 def show_error_message(message):
     """Display an error message box with a custom message."""
     root = tk.Tk()  # This is required to initialize Tkinter and should be part of your main application logic
@@ -119,6 +123,7 @@ def tab_index():
 
     return info_tab
 
+#데이터 수정 폼
 def change_form():
     global filename_tag, filename_name
     info_select = item_select()
@@ -170,8 +175,6 @@ def change_form():
 
     buttom_frame = ttk.Frame(form_frame)
     buttom_frame.grid(row=6, column=1, pady=10, padx=(0, 20))
-
-    
 
     def change_data():
         name = name_entry.get()
@@ -291,17 +294,27 @@ def update_scrollbar(treeview, tab_name):
     for column in treeview["columns"]:
         treeview.column(column, width=100)  # Adjust the width as needed
 
+#등록 폼
 def register_item():
+    global form_state, register_window
+
+    if form_state[0]:
+        print("is opened!")
+        return
+
+    form_state[0] = 1
+    
     register_window = tk.Toplevel(root)
     register_window.title("아이템 등록")
     register_window.geometry("360x335")
     register_window.resizable(False, False)
     center_window(register_window)
+    register_window.protocol("WM_DELETE_WINDOW", lambda: window_state(0))
 
     # 폼 생성
     form_frame = ttk.Frame(register_window)
     form_frame.pack(padx=10, pady=10)
-
+    
     # 이름 입력
     ttk.Label(form_frame, text="이름:").grid(row=0, column=0, sticky="w", pady=10)
     name_entry = ttk.Entry(form_frame)
@@ -334,7 +347,9 @@ def register_item():
 
     # 등록 버튼이 눌리면 폼의 내용을 가져와서 처리
     def on_focus_in(event):
-        if event.widget.get() == "필수항목" or event.widget.get() == "잘못된 데이터" or event.widget.get() == "양수를 입력하시오":
+        error_tag = ["필수항목", "잘못된 데이터", "양수를 입력하시오"]
+        
+        if event.widget.get() in error_tag:
             event.widget.delete(0, 'end')  # Clear the existing text
             event.widget.config(foreground="white")  # Change the text color back to black
 
@@ -413,8 +428,9 @@ def center_window(window):
     
 
 history_window_open = False
-history_window = None 
 
+
+#기록 추가 폼
 def history_item():
     global history_window_open
     global history_window
@@ -498,8 +514,25 @@ def history_item():
     y_cordinate1 = int((history_window.winfo_screenheight() / 2) - (history_window.winfo_height() / 2))
     history_window.geometry("+{}+{}".format(x_cordinate1, y_cordinate1))
 
+#폼 상태 = [등록 폼, 데이터 수정 폼, 기록 추가 폼]
+form_state = [0, 0, 0]
+
+
+def window_state(index):
+    global form_state
+    #form_index = {register_window, change_window, history_window}
+    if form_state[index] == 1:
+        form_state[index] = 0
+        if index == 0:
+            register_window.destroy() 
+    else:
+        pass
+            
+
+
 def on_history_window_close():
     global history_window_open
+    print("Dasdasdasd")
     history_window_open = False  # 폼이 닫힐 때 history_window_open 값을 False로 설정
     history_window.destroy()  # 윈도우를 파괴하여 메모리 누수를 방지
 
