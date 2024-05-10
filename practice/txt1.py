@@ -29,3 +29,20 @@ def center_window(window):
     register_window
     change_window
     history_window
+
+
+    def register_item():
+    global form_state, register_window
+
+    if form_state[0]:
+        print("is opened!")
+        return
+
+    form_state[0] = 1
+    
+    register_window = tk.Toplevel(root)
+    register_window.title("아이템 등록")
+    register_window.geometry("360x335")
+    register_window.resizable(False, False)
+    center_window(register_window)
+    register_window.protocol("WM_DELETE_WINDOW", lambda: window_state(0))

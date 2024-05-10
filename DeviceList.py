@@ -345,34 +345,21 @@ def register_item():
     item_type = ttk.Combobox(form_frame, values=["센서", "케이블"])
     item_type.grid(row=5, column=1)
 
-    # 등록 버튼이 눌리면 폼의 내용을 가져와서 처리
+    error_tag = ["필수항목", "잘못된 데이터", "양수를 입력하시오"]
+    entries = [name_entry, quantity_entry, tag_entry, link_entry, imagePath_entry, item_type]
+
     def on_focus_in(event):
-        error_tag = ["필수항목", "잘못된 데이터", "양수를 입력하시오"]
-        
         if event.widget.get() in error_tag:
             event.widget.delete(0, 'end')  # Clear the existing text
             event.widget.config(foreground="white")  # Change the text color back to black
 
-    def handle_register():
-        global item_tag, filename_name, tree_tag, filename_tag
-
-        # 각 항목의 값을 가져옴
-        name = name_entry.get()
-        quantity = quantity_entry.get()
-        tag = tag_entry.get()
-        link = link_entry.get()
-        imagePath = imagePath_entry.get()
-        item = item_type.get()
-    
-        # 빈 항목을 찾기 위한 리스트 생성
-        entries = [name_entry, quantity_entry, tag_entry, link_entry, imagePath_entry, item_type]
-        values = [name, quantity, tag, link, imagePath, item]
+    def data_check(user_data):
+        
         item_value = ["센서", "케이블"]
-
-        # 빈 항목의 이름을 저장할 리스트
         empty_entries = []
-        for entry, value in zip(entries, values):
-            if not value or value == "필수항목" or value == "잘못된 데이터":
+
+        for entry, value in zip(entries, user_data):
+            if not value or value in error_tag:
                 empty_entries.append(entry)
                 entry.delete(0, 'end')
                 entry.insert(0, "필수항목")
@@ -393,25 +380,40 @@ def register_item():
                     item_type.delete(0, 'end')
                     item_type.insert(0, "잘못된 데이터")
                     item_type.config(foreground="red")
-        # 빈 항목이 있는지 확인하고 있으면 함수 종료
-        if empty_entries:
+
+        return empty_entries
+
+    def handle_register():
+        global item_tag, filename_name, tree_tag, filename_tag
+        error_tag
+
+        # 각 항목의 값을 가져옴
+        name = name_entry.get()
+        quantity = quantity_entry.get()
+        tag = tag_entry.get()
+        link = link_entry.get()
+        imagePath = imagePath_entry.get()
+        item = item_type.get()
+    
+        values = [name, quantity, tag, link, imagePath, item]
+        
+        # 빈 항목이 있는지 확인
+        if data_check(values):
             return
         else:
-            # 각 항목을 처리하는 코드를 여기에 추가
-            data = (name, quantity, 0, tag, link, imagePath, item)
+            new_data = (name, quantity, 0, tag, link, imagePath, item)
 
             for index, name in enumerate(filename_name):
                 if item == name:
-                    tree_tag[index].insert('', 'end', values=data)
+                    tree_tag[index].insert('', 'end', values=new_data)
 
-                    write_file(filename_tag[index], data, item_tag)
+                    write_file(filename_tag[index], new_data, item_tag)
                 else:
                     pass
 
-        register_window.destroy()
+        window_state(0)
     
-    # Applying focus binding to each entry
-    for entry in [name_entry, quantity_entry, tag_entry, link_entry, imagePath_entry, item_type]:
+    for entry in entries:
         entry.bind("<FocusIn>", on_focus_in)
 
     # 등록 버튼 생성
@@ -432,46 +434,43 @@ history_window_open = False
 
 #기록 추가 폼
 def history_item():
-    global history_window_open
-    global history_window
-    global is_select
+    global form_state, is_select, history_window
 
     info_select = item_select()
 
-    if history_window_open or not is_select:
-        show_error_message("이미 열려있습니다!")
+    if form_state[2]:
+        print("is opened!")
         return
-    
-    history_window_open = True
+
+    form_state[2] = 1
 
     history_window = tk.Toplevel(root)
     history_window.title("히스토리 추가")
-    history_window.protocol("WM_DELETE_WINDOW", on_history_window_close)  # 윈도우가 닫힐 때 호출될 함수 지정
-    
-    history_window.geometry("500x500")
+    history_window.geometry("360x400")
+    history_window.resizable(False, False)
     center_window(history_window)
-    #history_window.geometry("+{}+{}".format(x_cordinate, y_cordinate-20))
+    history_window.protocol("WM_DELETE_WINDOW", lambda: window_state(2))
 
     form_frame = ttk.Frame(history_window)
     form_frame.pack(padx=10, pady=10)
 
-    ttk.Label(form_frame, text="아이템:").grid(row=0, column=0, sticky="w")
+    ttk.Label(form_frame, text="아이템:").grid(row=0, column=0, sticky="w", pady=10)
     item_label = ttk.Label(form_frame, text=str(info_select[0]))
-    item_label.grid(row=0, column=1)
+    item_label.grid(row=0, column=1, padx=10)
 
-    ttk.Label(form_frame, text="사용자:").grid(row=1, column=0, sticky="w")
+    ttk.Label(form_frame, text="사용자:").grid(row=1, column=0, sticky="w", pady=10)
     name_entry = ttk.Entry(form_frame)
     name_entry.grid(row=1, column=1)
 
-    ttk.Label(form_frame, text="갯수:").grid(row=2, column=0, sticky="w")
+    ttk.Label(form_frame, text="갯수:").grid(row=2, column=0, sticky="w", pady=10)
     quantity_entry = ttk.Entry(form_frame)
     quantity_entry.grid(row=2, column=1)
 
-    ttk.Label(form_frame, text="아이템 타입:").grid(row=3, column=0, sticky="w")
+    ttk.Label(form_frame, text="아이템 타입:").grid(row=3, column=0, sticky="w", pady=10)
     item_type = ttk.Label(form_frame, text=str(info_select[7]))
     item_type.grid(row=3, column=1)
 
-    ttk.Label(form_frame, text="사용 날짜:").grid(row=4, column=0, sticky="w")
+    ttk.Label(form_frame, text="사용 날짜:").grid(row=4, column=0, sticky="w", pady=10)
     date_entry = ttk.Entry(form_frame)
     date_entry.grid(row=4, column=1)
 
@@ -506,13 +505,7 @@ def history_item():
             save_history_date(values)
 
     register_button = ttk.Button(form_frame, text="등록", command=handle_history)
-    register_button.grid(row=5, columnspan=2)
-
-    history_window.update()
-    history_window.minsize(history_window.winfo_width(), history_window.winfo_height())
-    x_cordinate1 = int((history_window.winfo_screenwidth() / 2) - (history_window.winfo_width() / 2))
-    y_cordinate1 = int((history_window.winfo_screenheight() / 2) - (history_window.winfo_height() / 2))
-    history_window.geometry("+{}+{}".format(x_cordinate1, y_cordinate1))
+    register_button.grid(row=5, columnspan=2, padx=(40, 0), pady=20)
 
 #폼 상태 = [등록 폼, 데이터 수정 폼, 기록 추가 폼]
 form_state = [0, 0, 0]
