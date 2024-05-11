@@ -61,7 +61,8 @@ def read_file(filename, tree=None, tag=None):
             for index, item in enumerate(loaded_data):
                 if tag[0] == item["아이템"]:
                     values = [item[name] for name in history_tag]
-                    tree.insert('', 'end', values=values)
+                    tree.insert('', 'end', values=values[1:4])
+                    #이거 존나 이상함!!!!!!!!!!!!!!!!!!
            
         elif tree and tag:
             
@@ -294,22 +295,70 @@ def update_scrollbar(treeview, tab_name):
     for column in treeview["columns"]:
         treeview.column(column, width=100)  # Adjust the width as needed
 
+def center_window(window):
+    window.update_idletasks()
+    width = window.winfo_width()
+    height = window.winfo_height()
+    x = (window.winfo_screenwidth() // 2) - (width // 2)
+    y = (window.winfo_screenheight() // 2) - (height // 2)
+    window.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+
+error_tag = ["필수항목", "잘못된 데이터", "양수를 입력하시오"]
+quantity_entry, item_type = None, None
+
+def on_focus_in(event):
+    if event.widget.get() in error_tag:
+        event.widget.delete(0, 'end')
+        event.widget.config(foreground="white")
+
+def data_check(entries, user_data):
+        global quantity_entry, item_type
+
+        item_value = ["센서", "케이블"]
+        empty_entries = []
+
+        for entry, value in zip(entries, user_data):
+            if not value or value in error_tag:
+                empty_entries.append(entry)
+                entry.delete(0, 'end')
+                entry.insert(0, "필수항목")
+                entry.config(foreground="red")
+
+            if entry == quantity_entry:
+                try:
+                    if int(value) < 0:
+                        raise ValueError
+                except ValueError:
+                    empty_entries.append(entry)
+                    quantity_entry.delete(0, 'end')
+                    quantity_entry.insert(0, "양수를 입력하시오")
+                    quantity_entry.config(foreground="red")
+
+            if entry == item_type and value not in item_value:
+                    empty_entries.append(entry)
+                    item_type.delete(0, 'end')
+                    item_type.insert(0, "잘못된 데이터")
+                    item_type.config(foreground="red")
+
+        return empty_entries
+
 #등록 폼
 def register_item():
     global form_state, register_window
+    global quantity_entry, item_type
 
     if form_state[0]:
         print("is opened!")
         return
 
-    form_state[0] = 1
+    form_state[0] = True
     
     register_window = tk.Toplevel(root)
     register_window.title("아이템 등록")
     register_window.geometry("360x335")
     register_window.resizable(False, False)
     center_window(register_window)
-    register_window.protocol("WM_DELETE_WINDOW", lambda: window_state(0))
+    register_window.protocol("WM_DELETE_WINDOW", lambda: window_state(0, register_window))
 
     # 폼 생성
     form_frame = ttk.Frame(register_window)
@@ -345,47 +394,10 @@ def register_item():
     item_type = ttk.Combobox(form_frame, values=["센서", "케이블"])
     item_type.grid(row=5, column=1)
 
-    error_tag = ["필수항목", "잘못된 데이터", "양수를 입력하시오"]
     entries = [name_entry, quantity_entry, tag_entry, link_entry, imagePath_entry, item_type]
-
-    def on_focus_in(event):
-        if event.widget.get() in error_tag:
-            event.widget.delete(0, 'end')  # Clear the existing text
-            event.widget.config(foreground="white")  # Change the text color back to black
-
-    def data_check(user_data):
-        
-        item_value = ["센서", "케이블"]
-        empty_entries = []
-
-        for entry, value in zip(entries, user_data):
-            if not value or value in error_tag:
-                empty_entries.append(entry)
-                entry.delete(0, 'end')
-                entry.insert(0, "필수항목")
-                entry.config(foreground="red")
-
-            if entry == quantity_entry:
-                try:
-                    if int(value) < 0:
-                        raise ValueError
-                except ValueError:
-                    empty_entries.append(entry)
-                    quantity_entry.delete(0, 'end')
-                    quantity_entry.insert(0, "양수를 입력하시오")
-                    quantity_entry.config(foreground="red")
-
-            if entry == item_type and value not in item_value:
-                    empty_entries.append(entry)
-                    item_type.delete(0, 'end')
-                    item_type.insert(0, "잘못된 데이터")
-                    item_type.config(foreground="red")
-
-        return empty_entries
-
+    
     def handle_register():
         global item_tag, filename_name, tree_tag, filename_tag
-        error_tag
 
         # 각 항목의 값을 가져옴
         name = name_entry.get()
@@ -397,8 +409,8 @@ def register_item():
     
         values = [name, quantity, tag, link, imagePath, item]
         
-        # 빈 항목이 있는지 확인
-        if data_check(values):
+        #데이터 무결성 검사
+        if data_check(entries, values):
             return
         else:
             new_data = (name, quantity, 0, tag, link, imagePath, item)
@@ -406,12 +418,11 @@ def register_item():
             for index, name in enumerate(filename_name):
                 if item == name:
                     tree_tag[index].insert('', 'end', values=new_data)
-
                     write_file(filename_tag[index], new_data, item_tag)
                 else:
                     pass
 
-        window_state(0)
+        window_state(0, register_window)
     
     for entry in entries:
         entry.bind("<FocusIn>", on_focus_in)
@@ -420,36 +431,31 @@ def register_item():
     register_button = ttk.Button(form_frame, text="등록", command=handle_register)
     register_button.grid(row=6, columnspan=2, padx=(40,0), pady=20)
 
-def center_window(window):
-    window.update_idletasks()
-    width = window.winfo_width()
-    height = window.winfo_height()
-    x = (window.winfo_screenwidth() // 2) - (width // 2)
-    y = (window.winfo_screenheight() // 2) - (height // 2)
-    window.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+
     
 
-history_window_open = False
-
+# history_window_open = False
 
 #기록 추가 폼
 def history_item():
-    global form_state, is_select, history_window
+    global form_state, is_select, history_window, history_table
 
     info_select = item_select()
 
-    if form_state[2]:
+    print(form_state[2], is_select)
+
+    if form_state[2] or not is_select:
         print("is opened!")
         return
 
-    form_state[2] = 1
+    form_state[2] = True
 
     history_window = tk.Toplevel(root)
     history_window.title("히스토리 추가")
     history_window.geometry("360x400")
     history_window.resizable(False, False)
     center_window(history_window)
-    history_window.protocol("WM_DELETE_WINDOW", lambda: window_state(2))
+    history_window.protocol("WM_DELETE_WINDOW", lambda: window_state(2, history_window))
 
     form_frame = ttk.Frame(history_window)
     form_frame.pack(padx=10, pady=10)
@@ -479,6 +485,8 @@ def history_item():
 
     date_entry.insert(0, str(formatted_time))
 
+    entries = [name_entry, quantity_entry, date_entry]
+
     def handle_history():
         item = str(info_select[0])
         name = name_entry.get()
@@ -486,38 +494,34 @@ def history_item():
         date = date_entry.get()
         category = str(info_select[7])
 
-        entries = [item_label, name_entry, quantity_entry, date_entry, item_type]
-        values = [item, name, quantity, date, category]
+        values = [name, quantity, date]
 
-        empty_entries = []
-        for entry, value in zip(entries, values):
-            if not value or value == "필수항목":
-                empty_entries.append(entry)
-                entry.delete(0, 'end')
-                entry.insert(0, "필수항목")
-                entry.config(foreground="red")
-
-        if empty_entries:
+        #데이터 무결성 검사
+        if data_check(entries, values):
             return
         else:
-            data = (name, quantity, date)
-            #history_table.insert('', 'end', values=data)
-            save_history_date(values)
+            new_data = (item, name, quantity, date, category)
+            tree_data = new_data[1:4]
+            print(tree_data)
+            history_table.insert('', 'end', values=tree_data)
+            save_history_date(new_data)
+
+    for entry in entries:
+        entry.bind("<FocusIn>", on_focus_in)
 
     register_button = ttk.Button(form_frame, text="등록", command=handle_history)
     register_button.grid(row=5, columnspan=2, padx=(40, 0), pady=20)
 
 #폼 상태 = [등록 폼, 데이터 수정 폼, 기록 추가 폼]
-form_state = [0, 0, 0]
+form_state = [False, False, False]
 
 
-def window_state(index):
+def window_state(index, window):
     global form_state
     #form_index = {register_window, change_window, history_window}
-    if form_state[index] == 1:
-        form_state[index] = 0
-        if index == 0:
-            register_window.destroy() 
+    if form_state[index] == True:
+        form_state[index] = False
+        window.destroy()
     else:
         pass
             
@@ -635,7 +639,7 @@ def load_and_display_image(url):
 
 def item_select(event=None):
     global is_select
-    global filename_tag, filename_name
+    global filename_tag, filename_name, history_table
 
 
     info_tab = tab_index()
@@ -646,7 +650,7 @@ def item_select(event=None):
 
         #info_select[] = [name, total_cnt, use_cnt, invente_cnt, tag, link, image_path, category, filename]
         info_select = info_tab[1].item(item, "values")
-
+        print(info_select)
         for name, tag in zip(filename_name, filename_tag):
             if name == info_select[7]:
                 info_select += (tag,)
