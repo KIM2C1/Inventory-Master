@@ -26,12 +26,11 @@ change_window = None
 # 폼 별로 이름 불리 해야함!!!!!!!!!!
 name_entry, quantity_entry, item_type, date_entry = None, None, None, None
 
-def show_error_message(message):
-    """Display an error message box with a custom message."""
-    root = tk.Tk()  # This is required to initialize Tkinter and should be part of your main application logic
-    root.withdraw()  # This hides the root window which we don't need to see
-    tkinter.messagebox.showerror("Error", message)
-    root.destroy()  # Clean up the root window after closing messagebox
+def show_error_message():
+    root = tk.Tk() 
+    root.withdraw()
+    tkinter.messagebox.showwarning("Warring!", "아이템을 선택 해주세요!")
+    root.destroy()  
 
 def create_table(tab, columns):
     # 표를 만들고 형식 포맷하는 함수
@@ -46,14 +45,23 @@ def create_table(tab, columns):
 
 def read_file(filename, tree=None, tag=None):
     global history_taghistory_tag
-
     Check = False
+
+
+    def tree_insert(tree, data):
+        for index, item in enumerate(data):
+            if all (name in item for name in tag):
+                values = [item[name] for name in tag] 
+                values.insert(3, int(item["총 갯수"]) - int(item["사용중"]))
+                tree.insert('', 'end', values=values)
+            else:
+                print(f"Invalid data format in file '{item}': Missing tag.")
+    
     for name_tag in filename:
         try:
-            if os.path.getsize(name_tag) > 0:
-                with open(name_tag, "r", encoding="utf-8") as file:
-                    loaded_data = json.load(file)
-            else:
+            with open(name_tag, "r", encoding="utf-8") as file:
+                loaded_data = json.load(file)
+            if not loaded_data:
                 loaded_data = []
         except FileNotFoundError:
             loaded_data = []
@@ -66,19 +74,22 @@ def read_file(filename, tree=None, tag=None):
                 if tag[0] == item["아이템"]:
                     values = [item[name] for name in history_tag]
                     tree.insert('', 'end', values=values[1:])
-           
+
         elif tree and tag:
-            
-            for index, item in enumerate(loaded_data):
-                if all (name in item for name in tag):
-                    if not Check:
-                        tree.delete(*tree.get_children())
-                        Check = True
-                    values = [item[name] for name in tag] 
-                    values.insert(3, int(item["총 갯수"]) - int(item["사용중"]))
-                    tree.insert('', 'end', values=values)
-                else:
-                    print(f"Invalid data format in file '{item}': Missing tag.")
+            if not Check:
+                tree.delete(*tree.get_children())
+                Check = True
+
+            if tree == tree_total:
+                for name_tag in filename:
+                    with open(name_tag, "r", encoding="utf-8") as file:
+                        buff = json.load(file)
+                    if buff:
+                        tree_insert(tree, loaded_data)
+                        break
+            else:
+                if loaded_data:    
+                    tree_insert(tree, loaded_data)
         else:
             pass
 
@@ -154,12 +165,11 @@ def del_history_data():
     global info_history_select, item_tag, history_tag
 
     info_tab = tab_index()
+    info_select = item_select()
 
     if not is_select[1]:
-        print("is opened!!!!!")
+        show_error_message()
         return
-
-    info_select = item_select()
 
     original_tab_data = read_file([info_select[8]])
 
@@ -295,7 +305,7 @@ def register_item():
     global name_entry, quantity_entry, item_type
 
     if form_state[0]:
-        print("is opened!")
+        register_window.lift()
         return
 
     form_state[0] = True
@@ -391,11 +401,14 @@ def register_item():
 
 #데이터 수정 폼
 def change_form():
-    global filename_tag, filename_name
+    global filename_tag, filename_name, change_window
     global name_entry, quantity_entry, item_type
     
-    if form_state[1] or not is_select[0]:
-        print("is opened!")
+    if not is_select[0]:
+        show_error_message()
+        return
+    elif form_state[1]:
+        change_window.lift()
         return
     
     form_state[1] = True
@@ -518,7 +531,7 @@ def change_form():
 
     def delete_data():
         original_data = read_file([info_select[8]])
-
+        
         for i in range(len(original_data)):
             if original_data[i]['이름'] == info_select[0]:
                 new_data = [entry for entry in original_data if not (entry['이름'] == info_select[0])]
@@ -540,13 +553,16 @@ def change_form():
 
 #기록 추가 폼
 def history_item():
-    global form_state, is_select, history_window, history_table, quantity_entry, date_entry
+    global form_state, is_select, history_window, history_table, quantity_entry, date_entry, history_window
 
     info_select = item_select()
     info_tab = tab_index()
 
-    if form_state[2] or not is_select[0]:
-        print("is opened!")
+    if not is_select[0]:
+        show_error_message()
+        return
+    elif form_state[2]:
+        history_window.lift()
         return
 
     form_state[2] = True
