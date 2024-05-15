@@ -1,25 +1,26 @@
 import tkinter as tk
-from tkinter import ttk
-import webbrowser
-from PIL import Image, ImageTk
-import requests
-from io import BytesIO
-import json
 import tkinter.messagebox
+import webbrowser
+import requests
+import json
 import time
 import os
 import datetime
 
+from tkinter import ttk
+from PIL import Image, ImageTk
+from io import BytesIO
+
 #global var
-history_table = None
 item_tag = ["이름", "총 갯수", "사용중", "태그", "링크", "이미지주소", "카테고리"]
 history_tag = ["아이템", "사용자", "갯수", "사용 날짜", "아이디", "카테고리"]
 history_find_tag = ["아이템", "카테고리"]
 filename_tag = ["sensor.json", "cable.json"]
 filename_name = ["센서", "케이블"]
 is_select = [False, False]
-
 create_history = False
+
+history_table = None
 history_window = None 
 register_window = None
 change_window = None
