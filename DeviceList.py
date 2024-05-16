@@ -14,9 +14,9 @@ from io import BytesIO
 #global var
 item_tag = ["이름", "총 갯수", "사용중", "태그", "링크", "이미지주소", "카테고리"]
 history_tag = ["아이템", "사용자", "갯수", "사용 날짜", "아이디", "카테고리"]
-history_find_tag = ["아이템", "카테고리"]
-filename_tag = ["sensor.json", "cable.json"]
-filename_name = ["센서", "케이블"]
+
+filename_tag = ["sensor.json", "cable.json", "motor.json"]
+filename_name = ["센서", "케이블", "모터"]
 is_select = [False, False]
 create_history = False
 
@@ -29,13 +29,14 @@ change_window = None
 name_entry, quantity_entry, item_type, date_entry = None, None, None, None
 
 def show_error_message(message):
+    #에러 메시지를 함수
     root = tk.Tk() 
     root.withdraw()
     tkinter.messagebox.showwarning("Warring!", message)
     root.destroy()  
 
 def create_table(tab, columns):
-    # 표를 만들고 형식 포맷하는 함수
+    # 표를 만들고 형식 포맷 함수
     tree = ttk.Treeview(tab, columns=columns, show="headings") 
     for col in columns:
         tree.heading(col, text=col)
@@ -46,9 +47,9 @@ def create_table(tab, columns):
     return tree
 
 def read_file(filename, tree=None, tag=None):
-    global history_taghistory_tag
-    Check = False
-
+    #JSON 파일로 부터 데이터를 불러와 tree에 저장 또는 데이터 리턴 함수
+    Check = False 
+    #totla_tree인 경우 tree.delete를 한 번만 진행하기 위해서
 
     def tree_insert(tree, data):
         for index, item in enumerate(data):
@@ -99,6 +100,8 @@ def read_file(filename, tree=None, tag=None):
     return loaded_data
     
 def write_file(filename, data, tag):
+    #JSON 파일에 데이터 추가 함수
+    #1. 데이터 불러와 변수에 dic로 저장 2. 추가 데이터 변수에 추가 3. 변수를 기존 파일에 덮음 
     try:
         if os.path.getsize(filename) > 0:
             with open(filename, "r", encoding="utf-8") as file:
@@ -117,6 +120,7 @@ def write_file(filename, data, tag):
         print(f"Error writing to JSON file '{filename}': {e}")
 
 def dump_data(filename, data, tag):
+    #데이터를 <추가>가 아닌 통째로 변경하는 함수 (받은 데이터가 dic인 경우)
     try:
         with open(filename, "w", encoding="utf-8") as file:
             json.dump(data, file, ensure_ascii=False, indent=len(tag))
@@ -124,6 +128,8 @@ def dump_data(filename, data, tag):
         print(f"Error writing to JSON file '{filename}': {e}")
 
 def tab_index():
+    #탭을 선택할 때 탭 관련 데이터 추출 함수
+    #0. 파일이름 1. tree 변수 이름 2. tree 표시 이름(ex)전체, 센서....)
     global filename_tag, tree_tag
 
     current_tab_index = tab_control.index(tab_control.select())
@@ -141,6 +147,7 @@ def tab_index():
     return info_tab
 
 def relaod_data(filename, tree):
+    #데이터 리로드 및 마지막 선택 항목 복구 함수
     global last_selected_id
 
     read_file(filename, tree, item_tag)
@@ -151,6 +158,7 @@ def relaod_data(filename, tree):
             break
 
 def save_history_date(tree):
+    #history JSON과 tree에 데이터 추가 함수
     info_select = item_select()
 
     write_file("history.json", tree, history_tag)
@@ -164,6 +172,7 @@ def save_history_date(tree):
     dump_data(info_select[8], original_data, item_tag)
 
 def del_history_data():
+    #사용 기록 삭제 함수
     global info_history_select, item_tag, history_tag
 
     info_tab = tab_index()
@@ -228,11 +237,10 @@ def on_focus_in(event):
 
 error_tag = ["필수항목", "잘못된 데이터", "양수를 입력하시오", "양수가 아니거나 재고 부족", "YYYY-MM-DD", "중복된 이름"]
 def data_check(entries, user_data, filename = None, discount=None):
-        global quantity_entry, item_type, date_entry
+        global quantity_entry, item_type, date_entry, filename_name
 
         info_select = item_select()
 
-        item_value = ["센서", "케이블"]
         empty_entries = []
 
         def check_name(data, value, entry):
@@ -276,7 +284,7 @@ def data_check(entries, user_data, filename = None, discount=None):
                     entry.config(foreground="red")
                     empty_entries.append(entry)
 
-            if entry == item_type and value not in item_value:
+            if entry == item_type and value not in filename_name:
                 empty_entries.append(entry)
                 item_type.delete(0, 'end')
                 item_type.insert(0, "잘못된 데이터")
@@ -347,7 +355,7 @@ def register_item():
 
     # 아이템 타입 선택
     ttk.Label(form_frame, text="아이템 타입:").grid(row=5, column=0, sticky="w", pady=10)
-    item_type = ttk.Combobox(form_frame, values=["센서", "케이블"])
+    item_type = ttk.Combobox(form_frame, values=filename_name)
     item_type.grid(row=5, column=1)
 
     entries = [name_entry, quantity_entry, tag_entry, link_entry, imagePath_entry, item_type]
@@ -452,7 +460,7 @@ def change_form():
 
     # 아이템 타입 선택
     ttk.Label(form_frame, text="아이템 타입:").grid(row=5, column=0, sticky="w", pady=10)
-    item_type = ttk.Combobox(form_frame, values=["센서", "케이블"])
+    item_type = ttk.Combobox(form_frame, values=filename_name)
     item_type.grid(row=5, column=1)
     item_type.set(info_select[7])
 
@@ -810,7 +818,6 @@ root.wm_iconbitmap('title.ico')
 
 style = ttk.Style(root)
 
-
 root.tk.call("source", 'azure.tcl')
 root.tk.call("set_theme", 'dark')
 root.option_add("*Font", ("나눔고딕", 12))
@@ -837,13 +844,8 @@ tab_control.add(sensor_tab, text="센서")
 cable_tab = ttk.Frame(tab_control)
 tab_control.add(cable_tab, text="케이블")
 
-# 표 생성
-columns_tag = ("이름", "총 갯수", "사용중", "보관중", "태그")
-tree_total = create_table(total_tab, columns_tag)
-tree_sensor = create_table(sensor_tab, columns_tag)
-tree_cable = create_table(cable_tab, columns_tag)
-
-tree_tag = [tree_total, tree_sensor, tree_cable]
+motor_tab = ttk.Frame(tab_control)
+tab_control.add(motor_tab, text="모터")
 
 # 검색 엔트리와 검색 버튼 생성
 search_frame = ttk.Frame(left_frame)
@@ -870,7 +872,6 @@ modify_button.grid(row=0, column=2, padx=5)
 right_frame = ttk.Frame(root)
 right_frame.pack(side="right", fill="x", expand=True)
 
-#style.configure('White.TFrame', background='white')
 image_frame = ttk.Frame(right_frame)
 image_frame.pack(side="top", fill="both", expand=True)
 
@@ -892,26 +893,26 @@ search_entry.bind("<Return>", search_event)
 # 탭 변경 이벤트 바인딩
 tab_control.bind("<<NotebookTabChanged>>", switch_tab)
 
-# 링크를 더블 클릭하여 해당 링크 열기
-tree_total.bind("<Double-1>", open_link)
-tree_sensor.bind("<Double-1>", open_link)
-tree_cable.bind("<Double-1>", open_link)
+# 표 생성
+columns_tag = ("이름", "총 갯수", "사용중", "보관중", "태그")
+tree_total = create_table(total_tab, columns_tag)
+tree_sensor = create_table(sensor_tab, columns_tag)
+tree_cable = create_table(cable_tab, columns_tag)
+tree_motor = create_table(motor_tab, columns_tag)
 
-# 선택 이벤트 처리
-tree_total.bind("<<TreeviewSelect>>", item_select)
-tree_sensor.bind("<<TreeviewSelect>>", item_select)
-tree_cable.bind("<<TreeviewSelect>>", item_select)
+#tree 추가
+tree_tag = [tree_total, tree_sensor, tree_cable, tree_motor]
+
+# 바인드 설정
+for tree in tree_tag:
+    tree.bind("<Double-1>", open_link)
+    tree.bind("<<TreeviewSelect>>", item_select)
 
 # 초기 데이터 로드
-
 load_and_display_image("")
 switch_tab()
 
-#load_and_display_image("")
-
-# Set a minsize for the window, and place it in the middle
 root.update()
-root.minsize(root.winfo_width(), root.winfo_height()) #최소 크기 지정
+root.minsize(root.winfo_width(), root.winfo_height()) 
 center_window(root)
-
 root.mainloop()
