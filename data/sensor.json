@@ -2,7 +2,7 @@
        {
               "이름": "5V 릴레이 모듈",
               "총 갯수": "2",
-              "사용중": "0",
+              "사용중": 0,
               "태그": "릴레이",
               "링크": "https://www.devicemart.co.kr/goods/view?no=1358496",
               "이미지주소": "https://www.devicemart.co.kr/data/goods/1/2017/09/1358496_tmp_be8e2b051642661e22cae005fef64a9c1751view.jpg",
@@ -27,10 +27,10 @@
               "카테고리": "센서"
        },
        {
-              "이름": "펠티어소자 20*29",
+              "이름": "펠티어소자 20*20",
               "총 갯수": "7",
-              "사용중": 0,
-              "태그": "펠티",
+              "사용중": "0",
+              "태그": "펠티어",
               "링크": "https://www.devicemart.co.kr/goods/view?no=10894480",
               "이미지주소": "https://www.devicemart.co.kr/data/goods/1/2019/03/10894480_20190319140717152.JPG",
               "카테고리": "센서"
@@ -119,8 +119,8 @@
        {
               "이름": "심박센서",
               "총 갯수": "1",
-              "사용중": 0,
-              "태그": "심박센서",
+              "사용중": "0",
+              "태그": "심박센서 심박",
               "링크": "https://www.devicemart.co.kr/goods/view?no=12317597",
               "이미지주소": "https://www.devicemart.co.kr/data/goods/1/2019/10/_tmp_4b2d4077941264205ce1ce198eac986b0270view.jpg",
               "카테고리": "센서"

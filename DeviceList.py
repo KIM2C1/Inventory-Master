@@ -8,44 +8,50 @@ import os
 import datetime
 
 from tkinter import ttk
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageFont
 from io import BytesIO
 
-#global var
+#공통 태그 선언
 item_tag = ["이름", "총 갯수", "사용중", "태그", "링크", "이미지주소", "카테고리"]
 history_tag = ["아이템", "사용자", "갯수", "사용 날짜", "아이디", "카테고리"]
+treeview_name = ["센서", "케이블", "모터"]
 
-filename_tag = ["sensor.json", "cable.json", "motor.json"]
-filename_name = ["센서", "케이블", "모터"]
+filename_tag = ["data\sensor.json", "data\cable.json", "data\motor.json"]
+
+#아이템을 선택 했는지 체크하는 변수
 is_select = [False, False]
-create_history = False
 
-history_table = None
-history_window = None 
-register_window = None
-change_window = None
+#폼 전역 변수 선언
+history_window, register_window, change_window = None, None, None 
 
-# 폼 별로 이름 불리 해야함!!!!!!!!!!
+# 공통 entry 선언
 name_entry, quantity_entry, item_type, date_entry = None, None, None, None
 
-def show_error_message(message):
-    #에러 메시지를 함수
-    root = tk.Tk() 
-    root.withdraw()
-    tkinter.messagebox.showwarning("Warring!", message)
-    root.destroy()  
+def configure_styles():
+    #스타일 지정
+    style.configure("Treeview", font=("나눔고딕", 12))
+    style.configure("Treeview.Heading", font=("나눔고딕", 12))
+    style.configure("Accentbutton", foreground='white')
+    style.configure("Togglebutton", foreground='white')
+    style.configure("TNotebook.Tab", font=("나눔고딕", 12))
+    style.configure("TButton", font=("나눔고딕", 12))
 
 def create_table(tab, columns):
     # 표를 만들고 형식 포맷 함수
     tree = ttk.Treeview(tab, columns=columns, show="headings") 
     for col in columns:
         tree.heading(col, text=col)
-        if not col == "태그":
-            tree.column(col, anchor='center', width=100)  # 중앙 정렬
+        if not col == "태그" and not col == "이름":
+            tree.column(col, anchor='center', width=50, stretch=False)  # 중앙 정렬
+        if col == '이름':
+            tree.column(col, width=250, stretch=True)
+        else:
+            tree.column(col, stretch=False)
     tree.pack(side="left", fill="both", expand=True)
 
     return tree
 
+"""JSON 데이터 관리 함수"""
 def read_file(filename, tree=None, tag=None):
     #JSON 파일로 부터 데이터를 불러와 tree에 저장 또는 데이터 리턴 함수
     Check = False 
@@ -127,9 +133,191 @@ def dump_data(filename, data, tag):
     except (IOError, json.JSONDecodeError) as e:
         print(f"Error writing to JSON file '{filename}': {e}")
 
+def save_history_date(tree):
+    #history JSON과 tree에 데이터 추가 함수
+    info_select = item_select()
+
+    write_file("history.json", tree, history_tag)
+
+    original_data = read_file([info_select[8]])
+
+    for index in range(len(original_data)):
+        if original_data[index]['이름'] == tree[0]:
+            original_data[index]['사용중'] = int(original_data[index]['사용중']) + int(tree[2])
+
+    dump_data(info_select[8], original_data, item_tag)
+"""JSON 데이터 관리 함수"""
+
+"""서비스 함수"""
+def show_error_message(message):
+    #에러 메시지를 함수
+    root = tk.Tk() 
+    root.withdraw()
+    tkinter.messagebox.showwarning("Warring!", message)
+    root.destroy()  
+
+error_tag = ["필수항목", "잘못된 데이터", "양수를 입력하시오", "양수가 아니거나 재고 부족", "YYYY-MM-DD", "중복된 이름"]
+def data_check(entries, user_data, filename = None, discount=None):
+    #데이터 무결성 검사 함수
+
+    global quantity_entry, item_type, date_entry, treeview_name
+
+    info_select = item_select()
+    empty_entries = []
+
+    def check_name(data, value, entry):
+        #기존 데이터에서 중복된 데이터 검사 함수
+        for item in data:
+            if item["이름"] == value:
+                empty_entries.append(entry)
+                entry.delete(0, 'end')
+                entry.insert(0, "중복된 이름")
+                entry.config(foreground="red")
+        return False
+    
+    for entry, value in zip(entries, user_data):
+        #데이터가 없는 경우
+        if (not value or value in error_tag) and entry not in [quantity_entry, item_type, date_entry]:
+            empty_entries.append(entry)
+            entry.delete(0, 'end')
+            entry.insert(0, "필수항목")
+            entry.config(foreground="red")
+
+        elif entry == name_entry:
+            #이름이 잘못된 경우
+            try:
+                load_data = read_file([filename])
+                #데이터 수정인 경우
+                if info_select:
+                    if info_select[0] != value:
+                        #이름이 변경된 경우
+                        check_name(load_data, value, entry)
+
+                #데이터 등록인 경우
+                else:
+                    check_name(load_data, value, entry)
+            except:
+                pass
+
+        elif entry == quantity_entry:
+            #갯수가 잘못된 경우
+            try:
+                is_negative = (discount and ((int(discount) - int(value) < 0) or (int(value) <= 0))) or (not discount and int(value) < 0)
+                if is_negative:
+                    raise ValueError
+                
+            except ValueError:
+                entry.delete(0, 'end')
+                entry.insert(0, "양수가 아니거나 재고 부족")
+                entry.config(foreground="red")
+                empty_entries.append(entry)
+
+        elif entry == item_type and value not in treeview_name:
+            #카테고리에 없는 경우
+            empty_entries.append(entry)
+            item_type.delete(0, 'end')
+            item_type.insert(0, "잘못된 데이터")
+            item_type.config(foreground="red")
+
+        elif entry == date_entry or value not in value:
+            #날짜 형식이 잘못된 경우
+            try:
+                datetime.datetime.strptime(value, "%Y-%m-%d")
+            except ValueError:
+                empty_entries.append(entry)
+                date_entry.delete(0, 'end')
+                date_entry.insert(0, "YYYY-MM-DD")
+                date_entry.config(foreground="red")
+
+        else:
+            pass
+    return empty_entries
+
+def search_event(event=None):
+    #검색 함수
+
+    info_tab = tab_index()
+    keyword = search_entry.get().strip()  
+
+    def search_data(keyword):
+        global item_tag
+
+        try:
+            Check = False
+            data_found = False
+            for i in range(len(info_tab[0])):
+                loaded_data = read_file([info_tab[0][i]])
+                for index, item in enumerate(loaded_data):
+                    if keyword in item["이름"] or keyword in item["태그"]:
+                        if not Check:
+                            info_tab[1].delete(*info_tab[1].get_children())
+                            Check = True
+                        values = [item[name] for name in item_tag] 
+                        values.insert(3, int(item["총 갯수"]) - int(item["사용중"]))
+                        info_tab[1].insert('', 'end', values=values)
+                        data_found = True
+
+            if not data_found:
+                show_error_message("아이템이 없습니다!")
+                read_file(info_tab[0], info_tab[1], item_tag)
+
+        except FileNotFoundError:
+            pass
+        Check = False
+
+    if keyword:
+        search_data(keyword)
+    else:
+        read_file(info_tab[0], info_tab[1], item_tag)
+
+def open_link(event):
+    # 링크를 클릭할 때 웹 브라우저에서 해당 링크 여는 함수
+
+    item = event.widget.selection()[0]
+    link = event.widget.item(item, "values")[5]
+    if link:
+        webbrowser.open(link)
+
+def load_and_display_image(url):
+    #이미지 URL 검사 함수
+
+    try:
+        load_image_from_url(url)
+    except requests.RequestException as e:
+        load_image_from_url("https://as1.ftcdn.net/v2/jpg/02/14/73/42/1000_F_214734237_YnPf35kd8stUEpmiKwUsr22z11V1YQox.jpg")
+
+def load_image_from_url(url):
+    #이미지 로드 함수
+
+    response = requests.get(url)
+    response.raise_for_status()
+
+    image_data = BytesIO(response.content)
+    pil_image = Image.open(image_data)
+
+    # 이미지의 크기를 조절합니다.
+    pil_image.thumbnail((250, 250))
+    tk_image = ImageTk.PhotoImage(pil_image)
+
+    if hasattr(load_and_display_image, 'image_label'):
+        load_and_display_image.image_label.config(image=tk_image)
+        load_and_display_image.image_label.image = tk_image
+    else:
+        border_frame = ttk.Frame(image_frame, borderwidth=2, relief="groove")
+        border_frame.pack(fill='both', padx=10, pady=(10, 0))
+
+        image_label = ttk.Label(border_frame, image=tk_image)
+        image_label.image = tk_image 
+        image_label.pack(pady=(10, 10))
+        load_and_display_image.image_label = image_label
+
+    image_frame.update_idletasks()
+"""서비스 함수"""
+
+"""Bind 함수"""
 def tab_index():
     #탭을 선택할 때 탭 관련 데이터 추출 함수
-    #0. 파일이름 1. tree 변수 이름 2. tree 표시 이름(ex)전체, 센서....)
+    #info_tab[] = 0. 파일이름 1. tree 변수 이름 2. tree 표시 이름(ex)전체, 센서....)
     global filename_tag, tree_tag
 
     current_tab_index = tab_control.index(tab_control.select())
@@ -146,6 +334,117 @@ def tab_index():
 
     return info_tab
 
+def switch_tab(event=None):
+    #탭 변경 감지하는 함수
+    #탭 변경시 탬 관련 데이터 추출후 tree에 데이터 리로드 및 스크롤바 업데이트
+    info_tab = tab_index()
+    
+    read_file(info_tab[0], info_tab[1], item_tag)
+    update_scrollbar(info_tab[1], info_tab[2])
+
+last_selected_id = None
+def item_select(event=None):
+    #아이템 선택시 관련 데이터 추출
+    #info_select[] = 0. 이름 1. 총 갯수 2. 사용중 3. 보관중 4. 태그 5. 링크 6. 이미지링크 7. 카테고리 8. 파일 이름
+
+    global is_select, last_selected_id
+    global filename_tag, treeview_name, history_table
+
+    info_tab = tab_index()
+
+    if info_tab[1].selection():
+        is_select[0] = True
+        item = info_tab[1].selection()[0]
+        last_selected_id = info_tab[1].item(item, "values")[0]
+
+        #info_select[] = [name, total_cnt, use_cnt, invente_cnt, tag, link, image_path, category, filename]
+        info_select = info_tab[1].item(item, "values")
+            
+        for name, tag in zip(treeview_name, filename_tag):
+            if name == info_select[7]:
+                info_select += (tag,)
+                break
+
+        load_and_display_image(info_select[6])
+
+
+        history_tag = [info_select[0], info_select[7]]
+        read_file(["history.json"], history_table, history_tag)
+
+    else:
+        info_select = ()
+        is_select[0] = False
+        last_selected_id = None
+
+    return info_select
+
+info_history_select = ()
+def history_select(event):
+    #사용기록 선택시 관련 데이터 추출 함수
+
+    global info_history_select, is_select
+
+    if history_table.selection():
+        is_select[1] = True
+        item = history_table.selection()[0]
+        info_history_select = history_table.item(item, "values")
+    else:
+        info_history_select = ()
+        is_select[1] = False
+
+def on_focus_in(event):
+    #entry에서 내용을 클릭했을때 처리하는 함수
+
+    global error_tag
+
+    if event.widget.get() in error_tag:
+        event.widget.delete(0, 'end')
+        event.widget.config(foreground="white")
+"""Bind 함수"""
+
+"""Tree 관리 함수"""
+def center_window(window):
+    #폼을 화면 중앙에 맞추는 함수
+
+    window.update_idletasks()
+    width = window.winfo_width()
+    height = window.winfo_height()
+    x = (window.winfo_screenwidth() // 2) - (width // 2)
+    y = (window.winfo_screenheight() // 2) - (height // 2)
+    window.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+
+#폼 상태 = [등록 폼, 데이터 수정 폼, 기록 추가 폼]
+form_state = [False, False, False]
+def window_state(index, window):
+    #폼이 열려있는지 검사하는 함수
+
+    global form_state
+    #form_index = {register_window, change_window, history_window}
+    if form_state[index] == True:
+        form_state[index] = False
+        window.destroy()
+    else:
+        pass
+
+scrollbars = {}
+def update_scrollbar(treeview, tab_name):
+    #기존의 스크롤바를 지우고 다시 생성하는 함수
+
+    global scrollbars
+
+    if tab_name in scrollbars and scrollbars[tab_name]:
+        scrollbars[tab_name].destroy()
+
+    scrollbar = ttk.Scrollbar(treeview.master, orient='vertical', command=treeview.yview)
+    scrollbar.pack(side='right', fill='y')
+    treeview.configure(yscrollcommand=scrollbar.set)
+    scrollbars[tab_name] = scrollbar
+
+    for column in treeview["columns"]:
+        treeview.column(column, width=100)
+"""Tree 관리 함수"""
+
+"""폼 함수"""
 def relaod_data(filename, tree):
     #데이터 리로드 및 마지막 선택 항목 복구 함수
     global last_selected_id
@@ -157,152 +456,8 @@ def relaod_data(filename, tree):
             tree.selection_set(child)
             break
 
-def save_history_date(tree):
-    #history JSON과 tree에 데이터 추가 함수
-    info_select = item_select()
-
-    write_file("history.json", tree, history_tag)
-
-    original_data = read_file([info_select[8]])
-
-    for index in range(len(original_data)):
-        if original_data[index]['이름'] == tree[0]:
-            original_data[index]['사용중'] = int(original_data[index]['사용중']) + int(tree[2])
-
-    dump_data(info_select[8], original_data, item_tag)
-
-def del_history_data():
-    #사용 기록 삭제 함수
-    global info_history_select, item_tag, history_tag
-
-    info_tab = tab_index()
-    info_select = item_select()
-
-    if not is_select[1]:
-        show_error_message("아이템을 선택 해주세요!")
-        return
-
-    original_tab_data = read_file([info_select[8]])
-
-    for index in range(len(original_tab_data)):
-        if original_tab_data[index]['이름'] == info_select[0]:
-            original_tab_data[index]['사용중'] = int(original_tab_data[index]['사용중']) - int(info_history_select[1])
-
-    dump_data(info_select[8], original_tab_data, item_tag)
-
-    original_his_data = read_file(["history.json"])
-
-    new_data = [entry for entry in original_his_data if not (entry['사용자'] == info_history_select[0] and entry['갯수'] == info_history_select[1] and entry['사용 날짜'] == info_history_select[2] and entry['아이디'] == info_history_select[3])]
-
-    dump_data("history.json", new_data, history_tag)
-    load_and_display_image("")
-    relaod_data(info_tab[0], info_tab[1])
-
-scrollbars = {}
-
-def switch_tab(event=None):
-    #info_tab[] = [filename, tree_var_name, tree_dp_name]
-    info_tab = tab_index()
-    
-    read_file(info_tab[0], info_tab[1], item_tag)
-    update_scrollbar(info_tab[1], info_tab[2])
-
-def update_scrollbar(treeview, tab_name):
-    # Remove the previous scrollbar if it exists
-    if tab_name in scrollbars and scrollbars[tab_name]:
-        scrollbars[tab_name].destroy()
-
-    # Create a new scrollbar for the given treeview
-    scrollbar = ttk.Scrollbar(treeview.master, orient='vertical', command=treeview.yview)
-    scrollbar.pack(side='right', fill='y')
-    treeview.configure(yscrollcommand=scrollbar.set)
-    scrollbars[tab_name] = scrollbar
-
-    # Fix column widths for the treeview to avoid resizing
-    for column in treeview["columns"]:
-        treeview.column(column, width=100)  # Adjust the width as needed
-
-def center_window(window):
-    window.update_idletasks()
-    width = window.winfo_width()
-    height = window.winfo_height()
-    x = (window.winfo_screenwidth() // 2) - (width // 2)
-    y = (window.winfo_screenheight() // 2) - (height // 2)
-    window.geometry('{}x{}+{}+{}'.format(width, height, x, y))
-
-def on_focus_in(event):
-    if event.widget.get() in error_tag:
-        event.widget.delete(0, 'end')
-        event.widget.config(foreground="white")
-
-error_tag = ["필수항목", "잘못된 데이터", "양수를 입력하시오", "양수가 아니거나 재고 부족", "YYYY-MM-DD", "중복된 이름"]
-def data_check(entries, user_data, filename = None, discount=None):
-        global quantity_entry, item_type, date_entry, filename_name
-
-        info_select = item_select()
-
-        empty_entries = []
-
-        def check_name(data, value, entry):
-            for item in data:
-                if item["이름"] == value:
-                    empty_entries.append(entry)
-                    entry.delete(0, 'end')
-                    entry.insert(0, "중복된 이름")
-                    entry.config(foreground="red")
-            return False
-
-        for entry, value in zip(entries, user_data):
-            if (not value or value in error_tag) and entry not in [quantity_entry, item_type, date_entry]:
-                empty_entries.append(entry)
-                entry.delete(0, 'end')
-                entry.insert(0, "필수항목")
-                entry.config(foreground="red")
-
-            if entry == name_entry:
-                try:
-                    load_data = read_file([filename])
-                    #데이터 수정인 경우
-                    if info_select:
-                        if info_select[0] != value:
-                            check_name(load_data, value, entry)
-                    #데이터 등록인 경우
-                    else:
-                        check_name(load_data, value, entry)
-                except:
-                    pass
-
-            if entry == quantity_entry:
-                try:
-                    is_negative = (discount and ((int(discount) - int(value) < 0) or (int(value) <= 0))) or (not discount and int(value) < 0)
-                    if is_negative:
-                        raise ValueError
-                    
-                except ValueError:
-                    entry.delete(0, 'end')
-                    entry.insert(0, "양수가 아니거나 재고 부족")
-                    entry.config(foreground="red")
-                    empty_entries.append(entry)
-
-            if entry == item_type and value not in filename_name:
-                empty_entries.append(entry)
-                item_type.delete(0, 'end')
-                item_type.insert(0, "잘못된 데이터")
-                item_type.config(foreground="red")
-
-            if entry == date_entry or value not in value:
-                try:
-                    datetime.datetime.strptime(value, "%Y-%m-%d")
-                except ValueError:
-                    empty_entries.append(entry)
-                    date_entry.delete(0, 'end')
-                    date_entry.insert(0, "YYYY-MM-DD")
-                    date_entry.config(foreground="red")
-
-        return empty_entries
-
-#등록 폼
 def register_item():
+    #아이템 등록 폼
     global form_state, register_window
     global name_entry, quantity_entry, item_type
 
@@ -355,15 +510,15 @@ def register_item():
 
     # 아이템 타입 선택
     ttk.Label(form_frame, text="아이템 타입:").grid(row=5, column=0, sticky="w", pady=10)
-    item_type = ttk.Combobox(form_frame, values=filename_name)
+    item_type = ttk.Combobox(form_frame, values=treeview_name)
     item_type.grid(row=5, column=1)
 
     entries = [name_entry, quantity_entry, tag_entry, link_entry, imagePath_entry, item_type]
     
     def handle_register():
-        global item_tag, filename_name, tree_tag, filename_tag
+        #등록 버튼
+        global item_tag, treeview_name, tree_tag, filename_tag
 
-        # 각 항목의 값을 가져옴
         name = name_entry.get()
         quantity = quantity_entry.get()
         tag = tag_entry.get()
@@ -375,7 +530,7 @@ def register_item():
         
         filename = None
 
-        for index, value in enumerate(filename_name):
+        for index, value in enumerate(treeview_name):
             if value == item:
                 filename = filename_tag[index]
 
@@ -383,7 +538,7 @@ def register_item():
         if data_check(entries, values, filename):
             return
         else:
-            for index, value in enumerate(filename_name):
+            for index, value in enumerate(treeview_name):
                 if item == value:
                     new_data = (name, quantity, 0, tag, link, imagePath, item)
                     tree_tag[index].insert('', 'end', values=new_data)
@@ -401,9 +556,10 @@ def register_item():
     register_button = ttk.Button(form_frame, text="등록", command=handle_register)
     register_button.grid(row=6, columnspan=2, padx=(40,0), pady=20)
 
-#데이터 수정 폼
 def change_form():
-    global filename_tag, filename_name, change_window
+    #데이터 수정 폼
+
+    global filename_tag, treeview_name, change_window
     global name_entry, quantity_entry, item_type
     
     if not is_select[0]:
@@ -460,7 +616,7 @@ def change_form():
 
     # 아이템 타입 선택
     ttk.Label(form_frame, text="아이템 타입:").grid(row=5, column=0, sticky="w", pady=10)
-    item_type = ttk.Combobox(form_frame, values=filename_name)
+    item_type = ttk.Combobox(form_frame, values=treeview_name)
     item_type.grid(row=5, column=1)
     item_type.set(info_select[7])
 
@@ -470,6 +626,8 @@ def change_form():
     entries = [name_entry, quantity_entry, tag_entry, link_entry, imagePath_entry, item_type]
 
     def change_data():
+        #변경 버튼
+
         name = name_entry.get()
         quantity = quantity_entry.get()
         tag = tag_entry.get()
@@ -481,7 +639,7 @@ def change_form():
 
         filename = None
 
-        for index, value in enumerate(filename_name):
+        for index, value in enumerate(treeview_name):
             if value == item:
                 filename = filename_tag[index]
 
@@ -500,7 +658,7 @@ def change_form():
                         dump_data(info_select[8], remove_data, item_tag)
 
                         #변경된 카테고리로 부터 파일의 이름 추출
-                        filename = filename_tag[filename_name.index(item)] if item in filename_name else None
+                        filename = filename_tag[treeview_name.index(item)] if item in treeview_name else None
 
                         change_data = read_file([filename])
 
@@ -532,6 +690,8 @@ def change_form():
             read_file(info_tab[0], info_tab[1], item_tag)
 
     def delete_data():
+        #삭제 버튼
+
         original_data = read_file([info_select[8]])
         
         for i in range(len(original_data)):
@@ -553,9 +713,11 @@ def change_form():
     delete_button = ttk.Button(buttom_frame, width=5, text="삭제", command=delete_data)
     delete_button.pack(side="left")
 
-#기록 추가 폼
 def history_item():
-    global form_state, is_select, history_window, history_table, quantity_entry, date_entry, history_window
+    #사용기록 추가 폼
+
+    global form_state, is_select, history_window, history_table
+    global quantity_entry, date_entry
 
     info_select = item_select()
     info_tab = tab_index()
@@ -607,6 +769,8 @@ def history_item():
     entries = [name_entry, quantity_entry, date_entry]
 
     def handle_history():
+        #등록 버튼
+
         item = str(info_select[0])
         name = name_entry.get()
         quantity = quantity_entry.get()
@@ -634,181 +798,35 @@ def history_item():
     register_button = ttk.Button(form_frame, text="등록", command=handle_history)
     register_button.grid(row=5, columnspan=2, padx=(40, 0), pady=20)
 
-#폼 상태 = [등록 폼, 데이터 수정 폼, 기록 추가 폼]
-form_state = [False, False, False]
-
-def window_state(index, window):
-    global form_state
-    #form_index = {register_window, change_window, history_window}
-    if form_state[index] == True:
-        form_state[index] = False
-        window.destroy()
-    else:
-        pass
-            
-def search_event(event=None):
-    info_tab = tab_index()
-    keyword = search_entry.get().strip()  
-
-    def search_data(keyword):
-        global item_tag
-
-        try:
-            Check = False
-            data_found = False
-            for i in range(len(info_tab[0])):
-                loaded_data = read_file([info_tab[0][i]])
-                for index, item in enumerate(loaded_data):
-                    if keyword in item["이름"] or keyword in item["태그"]:
-                        if not Check:
-                            info_tab[1].delete(*info_tab[1].get_children())
-                            Check = True
-                        values = [item[name] for name in item_tag] 
-                        values.insert(3, int(item["총 갯수"]) - int(item["사용중"]))
-                        info_tab[1].insert('', 'end', values=values)
-                        data_found = True
-
-            if not data_found:
-                show_error_message("아이템이 없습니다!")
-                read_file(info_tab[0], info_tab[1], item_tag)
-
-        except FileNotFoundError:
-            pass
-        Check = False
-
-    if keyword:
-        search_data(keyword)
-    else:
-        read_file(info_tab[0], info_tab[1], item_tag)
-
-def open_link(event):
-    # 링크를 클릭할 때 웹 브라우저에서 해당 링크 열기
-    item = event.widget.selection()[0]
-    link = event.widget.item(item, "values")[5]  # 링크는 세 번째 열에 있음
-    if link:  # 링크가 비어있지 않으면 열기
-        webbrowser.open(link)
-
-def configure_styles():
-    style.configure("Treeview", font=("나눔고딕", 12))
-    style.configure("Treeview.Heading", font=("나눔고딕", 12))
-    style.configure("Accentbutton", foreground='white')
-    style.configure("Togglebutton", foreground='white')
-    style.configure("TNotebook.Tab", font=("나눔고딕", 12))
-    style.configure("TButton", font=("나눔고딕", 12))
-
-def load_and_display_image(url):
-    global history_table, create_history
-
-    if not url:
-        url = "https://as1.ftcdn.net/v2/jpg/02/14/73/42/1000_F_214734237_YnPf35kd8stUEpmiKwUsr22z11V1YQox.jpg"
-    try:
-        # 이미지 로딩을 위한 함수 호출
-        load_image_from_url(url)
-    except requests.RequestException as e:
-        #print(f"Error loading image: {e}")
-        # 예외가 발생했을 때 기본 이미지 로딩
-        load_image_from_url("https://as1.ftcdn.net/v2/jpg/02/14/73/42/1000_F_214734237_YnPf35kd8stUEpmiKwUsr22z11V1YQox.jpg")
-
-def load_image_from_url(url):
-    global history_table, create_history
-
-    # Get the image from the URL
-    response = requests.get(url)
-    response.raise_for_status()  # Raise exception if there is an error
-    # Create a PIL image from the image data
-    image_data = BytesIO(response.content)
-    pil_image = Image.open(image_data)
-    # 이미지의 크기를 조절합니다.
-    pil_image.thumbnail((250, 250))
-    # Convert the PIL image to a format that Tkinter can use
-    tk_image = ImageTk.PhotoImage(pil_image)
-    # If the image label already exists, update its image
-    if hasattr(load_and_display_image, 'image_label'):
-        load_and_display_image.image_label.config(image=tk_image)
-        load_and_display_image.image_label.image = tk_image
-    else:
-        # Create a bordered frame for the image
-        border_frame = ttk.Frame(image_frame, borderwidth=2, relief="groove")
-        border_frame.pack(fill='both', padx=10, pady=(10, 0))
-        # Create a Tkinter label widget inside the border frame and set the image
-        image_label = ttk.Label(border_frame, image=tk_image)
-        image_label.image = tk_image  # Keep a reference to prevent garbage collection
-        image_label.pack(pady=(10, 10))
-        load_and_display_image.image_label = image_label  # Store the label for reuse
-    image_frame.update_idletasks()  # Update the container's information
-
-    # Create history table if it has not been created yet
-    if not create_history:
-        create_history = True
-        create_history_table()
-
-def create_history_table():
-    global history_table
-    # Create a label widget for the text below the image
-    history_table = ttk.Treeview(log_frame, columns=("사용자", "갯수", "사용 날짜", "아이디"), show="headings")
-    history_table.heading("사용자", text="사용자")
-    history_table.heading("갯수", text="갯수")
-    history_table.heading("사용 날짜", text="사용 날짜")
-    history_table.heading("아이디", text="아이디")
-    history_table.column("사용자", width=100, anchor="center")
-    history_table.column("갯수", width=70, anchor="center")
-    history_table.column("사용 날짜", width=100, anchor="center")
-    history_table.column("아이디", width=0, anchor="center", stretch=False)
-    history_table.pack(side='left', fill='x')
-    scrollbar = ttk.Scrollbar(log_frame, orient='vertical', command=history_table.yview)
-    scrollbar.pack(side='right', fill='y')
-    history_table.configure(yscroll=scrollbar.set)
-    history_table.bind("<<TreeviewSelect>>", history_select)
-    load_and_display_image.history_table = history_table  # Store the label for reuse
-
-last_selected_id = None
-
-def item_select(event=None):
-    global is_select, last_selected_id
-    global filename_tag, filename_name, history_table
+def del_history_data():
+    #사용 기록 삭제 함수
+    global info_history_select, item_tag, history_tag
 
     info_tab = tab_index()
+    info_select = item_select()
 
-    if info_tab[1].selection():
-        is_select[0] = True
-        item = info_tab[1].selection()[0]
-        last_selected_id = info_tab[1].item(item, "values")[0]
+    if not is_select[1]:
+        show_error_message("아이템을 선택 해주세요!")
+        return
 
-        #info_select[] = [name, total_cnt, use_cnt, invente_cnt, tag, link, image_path, category, filename]
-        info_select = info_tab[1].item(item, "values")
+    original_tab_data = read_file([info_select[8]])
+
+    for index in range(len(original_tab_data)):
+        if original_tab_data[index]['이름'] == info_select[0]:
+            original_tab_data[index]['사용중'] = int(original_tab_data[index]['사용중']) - int(info_history_select[1])
+
+    dump_data(info_select[8], original_tab_data, item_tag)
+
+    original_his_data = read_file(["history.json"])
+
+    new_data = [entry for entry in original_his_data if not (entry['사용자'] == info_history_select[0] and entry['갯수'] == info_history_select[1] and entry['사용 날짜'] == info_history_select[2] and entry['아이디'] == info_history_select[3])]
+
+    dump_data("history.json", new_data, history_tag)
+
+    relaod_data(info_tab[0], info_tab[1])
+"""폼 함수"""
             
-        for name, tag in zip(filename_name, filename_tag):
-            if name == info_select[7]:
-                info_select += (tag,)
-                break
-
-        load_and_display_image(info_select[6])
-
-
-        history_tag = [info_select[0], info_select[7]]
-        read_file(["history.json"], history_table, history_tag)
-
-    else:
-        info_select = ()
-        is_select[0] = False
-        last_selected_id = None
-
-    return info_select
-
-info_history_select = ()
-
-def history_select(event):
-    global info_history_select, is_select
-
-    if history_table.selection():
-        is_select[1] = True
-        item = history_table.selection()[0]
-        info_history_select = history_table.item(item, "values")
-    else:
-        info_history_select = ()
-        is_select[1] = False
-
-# GUI 생성
+#Main 함수 및 GUI 생성
 root = tk.Tk()
 root.geometry('1050x600')
 root.resizable(False, False)
@@ -818,7 +836,7 @@ root.wm_iconbitmap('title.ico')
 
 style = ttk.Style(root)
 
-root.tk.call("source", 'azure.tcl')
+root.tk.call("source", "assets/azure.tcl")
 root.tk.call("set_theme", 'dark')
 root.option_add("*Font", ("나눔고딕", 12))
 
@@ -902,6 +920,26 @@ tree_motor = create_table(motor_tab, columns_tag)
 
 #tree 추가
 tree_tag = [tree_total, tree_sensor, tree_cable, tree_motor]
+
+#history_tree 선언
+history_table = None
+
+#history_table 추가
+history_table = ttk.Treeview(log_frame, columns=("사용자", "갯수", "사용 날짜", "아이디"), show="headings")
+history_table.heading("사용자", text="사용자")
+history_table.heading("갯수", text="갯수")
+history_table.heading("사용 날짜", text="사용 날짜")
+history_table.heading("아이디", text="아이디")
+history_table.column("사용자", width=100, anchor="center")
+history_table.column("갯수", width=70, anchor="center")
+history_table.column("사용 날짜", width=100, anchor="center")
+history_table.column("아이디", width=0, anchor="center", stretch=False)
+history_table.pack(side='left', fill='x')
+scrollbar = ttk.Scrollbar(log_frame, orient='vertical', command=history_table.yview)
+scrollbar.pack(side='right', fill='y')
+history_table.configure(yscroll=scrollbar.set)
+
+history_table.bind("<<TreeviewSelect>>", history_select)
 
 # 바인드 설정
 for tree in tree_tag:
