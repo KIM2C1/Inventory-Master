@@ -284,7 +284,7 @@ def load_and_display_image(url):
     try:
         load_image_from_url(url)
     except requests.RequestException as e:
-        load_image_from_url("https://as1.ftcdn.net/v2/jpg/02/14/73/42/1000_F_214734237_YnPf35kd8stUEpmiKwUsr22z11V1YQox.jpg")
+        load_image_from_url("https://private-user-images.githubusercontent.com/119794073/331889573-38da8578-a4d6-4b24-8f58-a30ac7154496.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTYxNDAxMjUsIm5iZiI6MTcxNjEzOTgyNSwicGF0aCI6Ii8xMTk3OTQwNzMvMzMxODg5NTczLTM4ZGE4NTc4LWE0ZDYtNGIyNC04ZjU4LWEzMGFjNzE1NDQ5Ni5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjQwNTE5JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI0MDUxOVQxNzMwMjVaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT0yN2VlZTBlZDZmMmIzZTBmY2EyOWJiMTVjMjdhZDkxNmRiNTZlZTc2OGEyZDlkYjg0MWY1MzA4MTExMmQzOWNiJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCZhY3Rvcl9pZD0wJmtleV9pZD0wJnJlcG9faWQ9MCJ9.yUHD6UugkhLFdBaRAu8YNvScVhcxdDhkRylSHNW_5dw")
 
 def load_image_from_url(url):
     #이미지 로드 함수
