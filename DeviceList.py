@@ -14,9 +14,9 @@ from io import BytesIO
 #공통 태그 선언
 item_tag = ["이름", "총 갯수", "사용중", "태그", "링크", "이미지주소", "카테고리"]
 history_tag = ["아이템", "사용자", "갯수", "사용 날짜", "아이디", "카테고리"]
-treeview_name = ["센서", "케이블", "모터"]
+treeview_name = ["센서", "케이블", "모터", "컨버터"]
 
-filename_tag = ["data\sensor.json", "data\cable.json", "data\motor.json"]
+filename_tag = ["data\sensor.json", "data\cable.json", "data\motor.json", "data\converter.json"]
 
 #아이템을 선택 했는지 체크하는 변수
 is_select = [False, False]
@@ -284,7 +284,7 @@ def load_and_display_image(url):
     try:
         load_image_from_url(url)
     except requests.RequestException as e:
-        load_image_from_url("https://private-user-images.githubusercontent.com/119794073/331889573-38da8578-a4d6-4b24-8f58-a30ac7154496.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTYxNDAxMjUsIm5iZiI6MTcxNjEzOTgyNSwicGF0aCI6Ii8xMTk3OTQwNzMvMzMxODg5NTczLTM4ZGE4NTc4LWE0ZDYtNGIyNC04ZjU4LWEzMGFjNzE1NDQ5Ni5wbmc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjQwNTE5JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI0MDUxOVQxNzMwMjVaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT0yN2VlZTBlZDZmMmIzZTBmY2EyOWJiMTVjMjdhZDkxNmRiNTZlZTc2OGEyZDlkYjg0MWY1MzA4MTExMmQzOWNiJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCZhY3Rvcl9pZD0wJmtleV9pZD0wJnJlcG9faWQ9MCJ9.yUHD6UugkhLFdBaRAu8YNvScVhcxdDhkRylSHNW_5dw")
+        load_image_from_url("https://i.ibb.co/whFbRQJ/empty-item.png")
 
 def load_image_from_url(url):
     #이미지 로드 함수
@@ -862,8 +862,13 @@ tab_control.add(sensor_tab, text="센서")
 cable_tab = ttk.Frame(tab_control)
 tab_control.add(cable_tab, text="케이블")
 
+# 모터 탭 생성
 motor_tab = ttk.Frame(tab_control)
 tab_control.add(motor_tab, text="모터")
+
+# 컨버터 탭 생성
+converter_tab = ttk.Frame(tab_control)
+tab_control.add(converter_tab, text="컨버터")
 
 # 검색 엔트리와 검색 버튼 생성
 search_frame = ttk.Frame(left_frame)
@@ -917,9 +922,10 @@ tree_total = create_table(total_tab, columns_tag)
 tree_sensor = create_table(sensor_tab, columns_tag)
 tree_cable = create_table(cable_tab, columns_tag)
 tree_motor = create_table(motor_tab, columns_tag)
+tree_converter = create_table(converter_tab, columns_tag)
 
 #tree 추가
-tree_tag = [tree_total, tree_sensor, tree_cable, tree_motor]
+tree_tag = [tree_total, tree_sensor, tree_cable, tree_motor, tree_converter]
 
 #history_tree 선언
 history_table = None

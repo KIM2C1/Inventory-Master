@@ -90,15 +90,6 @@
               "카테고리": "센서"
        },
        {
-              "이름": "아두이노 모터드라이버 쉴드",
-              "총 갯수": "1",
-              "사용중": 0,
-              "태그": "아두이노 모터드라이버 쉴드",
-              "링크": "https://www.devicemart.co.kr/goods/view?no=1357257",
-              "이미지주소": "https://www.devicemart.co.kr/data/collect_img/kind_0/goods/large/1357257.jpg",
-              "카테고리": "센서"
-       },
-       {
               "이름": "초음파 센서",
               "총 갯수": "19",
               "사용중": 0,
@@ -123,6 +114,78 @@
               "태그": "심박센서 심박",
               "링크": "https://www.devicemart.co.kr/goods/view?no=12317597",
               "이미지주소": "https://www.devicemart.co.kr/data/goods/1/2019/10/_tmp_4b2d4077941264205ce1ce198eac986b0270view.jpg",
+              "카테고리": "센서"
+       },
+       {
+              "이름": "EPS8266 와이파이 모듈",
+              "총 갯수": "6",
+              "사용중": 0,
+              "태그": "와이파이 ESP",
+              "링크": "https://www.devicemart.co.kr/goods/view?no=1279338",
+              "이미지주소": "https://www.devicemart.co.kr/data/collect_img/kind_0/goods/large/1279338.jpg",
+              "카테고리": "센서"
+       },
+       {
+              "이름": "아두이노 무선통신 모듈 2.4G",
+              "총 갯수": "3",
+              "사용중": 0,
+              "태그": "무선통신 모듈 2.4G",
+              "링크": "https://www.devicemart.co.kr/goods/view?no=1312770",
+              "이미지주소": "https://www.devicemart.co.kr/data/collect_img/kind_0/fogoods/large/1312770.jpg",
+              "카테고리": "센서"
+       },
+       {
+              "이름": "HC-06 블루투스",
+              "총 갯수": "8",
+              "사용중": "0",
+              "태그": "HC-06 블루투스",
+              "링크": "https://www.devicemart.co.kr/goods/view?no=1278220",
+              "이미지주소": "https://www.devicemart.co.kr/data/collect_img/kind_0/goods/large/1278220.jpg",
+              "카테고리": "센서"
+       },
+       {
+              "이름": "HC-05 블루투스",
+              "총 갯수": "1",
+              "사용중": 0,
+              "태그": "HC-05 블루투스",
+              "링크": "https://www.devicemart.co.kr/goods/view?no=1289993",
+              "이미지주소": "https://www.devicemart.co.kr/data/collect_img/kind_0/goods/large/1289993.jpg",
+              "카테고리": "센서"
+       },
+       {
+              "이름": "JDY-23 블루투스",
+              "총 갯수": "1",
+              "사용중": 0,
+              "태그": "JDY-23 블루투스",
+              "링크": "https://www.devicemart.co.kr/goods/view?no=15238484",
+              "이미지주소": "https://www.devicemart.co.kr/data/goods/1/2023/10/15238484_tmp_77c340d2cb4ce5710188a689842b2ce52334view.jpg",
+              "카테고리": "센서"
+       },
+       {
+              "이름": "토양 습도 센서 모듈",
+              "총 갯수": "4",
+              "사용중": "0",
+              "태그": "토양 습도 센서 모",
+              "링크": "https://www.devicemart.co.kr/goods/view?no=1376532",
+              "이미지주소": "https://www.devicemart.co.kr/data/collect_img/kind_0/goods/large/1376532.jpg",
+              "카테고리": "센서"
+       },
+       {
+              "이름": "CdS 광/조도 센서",
+              "총 갯수": "7",
+              "사용중": 0,
+              "태그": "CdS 광/조도 센서",
+              "링크": "https://www.devicemart.co.kr/goods/view?no=1327438",
+              "이미지주소": "https://www.devicemart.co.kr/data/collect_img/kind_0/goods/large/1327438.jpg",
+              "카테고리": "센서"
+       },
+       {
+              "이름": "디지털 조도 센서 모듈",
+              "총 갯수": "1",
+              "사용중": "0",
+              "태그": "디지털 조도 센서 모",
+              "링크": "https://www.devicemart.co.kr/goods/view?no=1289977",
+              "이미지주소": "https://www.devicemart.co.kr/data/collect_img/kind_0/goods/large/1289977.jpg",
               "카테고리": "센서"
        }
 ]
